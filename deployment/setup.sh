@@ -56,11 +56,14 @@ cp -r /tmp/app-source/scripts /opt/gitea/ 2>/dev/null || echo "ℹ️  No script
 # Make scripts executable
 chmod +x /opt/gitea/scripts/*.sh 2>/dev/null || true
 
-# Install systemd service
-cp /tmp/app-source/systemd/gitea.service /etc/systemd/system/ 2>/dev/null || echo "ℹ️  No systemd service to copy"
+# Install systemd services
+cp /tmp/app-source/systemd/gitea.service /etc/systemd/system/ 2>/dev/null || echo "ℹ️  No gitea systemd service to copy"
+cp /tmp/app-source/systemd/ai-agent.service /etc/systemd/system/ 2>/dev/null || echo "ℹ️  No ai-agent systemd service to copy"
 systemctl daemon-reload
 systemctl enable gitea
+systemctl enable ai-agent
 systemctl start gitea
+systemctl start ai-agent
 
 echo "✅ Gitea installed and started"
 

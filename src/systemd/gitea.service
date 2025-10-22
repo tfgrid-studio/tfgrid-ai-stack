@@ -1,0 +1,27 @@
+[Unit]
+Description=Gitea (Git with a cup of tea)
+After=network.target
+
+[Service]
+User=gitea
+Group=gitea
+WorkingDirectory=/var/lib/gitea
+ExecStart=/usr/local/bin/gitea web --config /etc/gitea/app.ini
+Environment="HOME=/var/lib/gitea"
+Restart=always
+RestartSec=10
+
+# Resource limits
+MemoryMax=1G
+CPUQuota=200%
+
+# Environment
+Environment="PATH=/usr/local/bin:/usr/bin:/bin"
+Environment="HOME=/home/gitea"
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
