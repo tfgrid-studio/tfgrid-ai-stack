@@ -8,6 +8,12 @@ patterns:
   supported:
     - tfgrid-ai-stack
 
+# Deployment hooks (called by deployer)
+hooks:
+  setup: deployment/setup.sh
+  configure: deployment/configure.sh
+  healthcheck: deployment/healthcheck.sh
+
 # Resource requirements
 resources:
   cpu:
