@@ -1,30 +1,48 @@
 #!/usr/bin/env bash
-# Health check script - Verify tfgrid-ai-stack components
-# This runs after configuration to ensure all components are operational
+# Health check script - Verify all services are running
+# This runs after configuration to ensure everything is operational
 
 set -e
 
-echo "🏥 Running health checks for tfgrid-ai-stack components..."
+echo "🏥 Running health checks for tfgrid-ai-stack services..."
 
-# Check AI Agent component
-echo "Checking AI Agent..."
-if ! tfgrid-compose status ai-agent-${DEPLOYMENT_NAME} | grep -q "running"; then
-    echo "❌ AI Agent is not running"
+VM_IP="${PRIMARY_IP}"
+SSH_KEY_PATH="${SSH_KEY_PATH}"
+
+# Check system services
+echo "Checking system services..."
+ssh -i "${SSH_KEY_PATH}" -o StrictHostKeyChecking=no root@${VM_IP} << 'EOF'
+# Check Docker
+if ! systemctl is-active --quiet docker; then
+    echo "❌ Docker is not running"
     exit 1
 fi
 
-# Check Gitea component
-echo "Checking Gitea..."
-if ! tfgrid-compose status gitea-${DEPLOYMENT_NAME} | grep -q "running"; then
+# Check Nginx
+if ! systemctl is-active --quiet nginx; then
+    echo "❌ Nginx is not running"
+    exit 1
+fi
+
+# Check Gitea
+if ! systemctl is-active --quiet gitea; then
     echo "❌ Gitea is not running"
     exit 1
 fi
 
-# Check gateway routing
-echo "Checking gateway routing..."
-if ! curl -f -s "http://${PRIMARY_IP}/git/" > /dev/null; then
-    echo "❌ Gateway routing to Gitea failed"
+echo "✅ System services are running"
+EOF
+
+# Check web endpoints
+echo "Checking web endpoints..."
+if ! curl -f -s "http://${VM_IP}/git/" > /dev/null; then
+    echo "❌ Gitea web interface not accessible"
     exit 1
 fi
 
-echo "✅ All components are healthy"
+if ! curl -f -s "http://${VM_IP}/api/health" > /dev/null; then
+    echo "❌ AI Agent API not accessible"
+    exit 1
+fi
+
+echo "✅ All services are healthy and accessible"

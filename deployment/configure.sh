@@ -1,52 +1,41 @@
 #!/usr/bin/env bash
-# Configure script - Wire together tfgrid-ai-stack components
-# This runs after setup to configure networking and routing
+# Configure script - Set up SSL and domain configuration
+# This runs after setup to configure external access
 
 set -e
 
-echo "⚙️ Configuring tfgrid-ai-stack component integration..."
+echo "⚙️ Configuring tfgrid-ai-stack SSL and domain..."
 
-# Get component IPs from deployed apps
-AI_AGENT_IP=$(tfgrid-compose info ai-agent-${DEPLOYMENT_NAME} | grep "IP:" | cut -d: -f2 | tr -d ' ')
-GITEA_IP=$(tfgrid-compose info gitea-${DEPLOYMENT_NAME} | grep "IP:" | cut -d: -f2 | tr -d ' ')
+VM_IP="${PRIMARY_IP}"
+SSH_KEY_PATH="${SSH_KEY_PATH}"
 
-# Configure Nginx on gateway VM to route traffic
-cat > /tmp/nginx-sites << EOF
-# AI Stack Gateway Configuration
-server {
-    listen 80;
-    server_name ${DOMAIN:-_};
+# Configure domain and SSL if provided
+if [ -n "${DOMAIN}" ]; then
+    echo "🔒 Setting up SSL for ${DOMAIN}..."
 
-    # Git routing
-    location /git/ {
-        proxy_pass http://${GITEA_IP}:3000/;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-    }
+    ssh -i "${SSH_KEY_PATH}" -o StrictHostKeyChecking=no root@${VM_IP} << EOF
+# Update nginx config with domain
+sed -i "s/server_name _;/server_name ${DOMAIN};/" /etc/nginx/sites-available/ai-stack
 
-    # AI Agent API routing
-    location /api/ {
-        proxy_pass http://${AI_AGENT_IP}:8080/;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-    }
+# Get SSL certificate
+certbot --nginx -d ${DOMAIN} --email ${SSL_EMAIL:-admin@${DOMAIN}} --agree-tos --non-interactive
 
-    # Project routing (dynamic)
-    location ~ ^/project([0-9]+)/ {
-        # This will be configured dynamically when projects are created
-        return 404 "Project not found";
-    }
+# Reload nginx
+systemctl reload nginx
 
-    # Default: AI Stack dashboard
-    location / {
-        # Serve static dashboard or redirect to git
-        return 302 /git/;
-    }
-}
+echo "✅ SSL configured for ${DOMAIN}"
+EOF
+else
+    echo "ℹ️ No domain specified - running in private mode"
+fi
+
+# Configure firewall for public access
+ssh -i "${SSH_KEY_PATH}" -o StrictHostKeyChecking=no root@${VM_IP} << 'EOF'
+ufw allow 80
+ufw allow 443
+ufw --force enable
+
+echo "✅ Firewall configured"
 EOF
 
-# Copy nginx config to gateway VM
-scp -i "${SSH_KEY_PATH}" -o StrictHostKeyChecking=no /tmp/nginx-sites root@${PRIMARY_IP}:/etc/nginx/sites-available/ai-stack
-ssh -i "${SSH_KEY_PATH}" -o StrictHostKeyChecking=no root@${PRIMARY_IP} "ln -sf /etc/nginx/sites-available/ai-stack /etc/nginx/sites-enabled/ && systemctl reload nginx"
-
-echo "✅ Component integration completed"
+echo "✅ Configuration completed"

@@ -4,9 +4,9 @@ description: AI-powered development platform with integrated Git hosting and dep
 
 # Pattern compatibility
 patterns:
-  recommended: gateway
+  recommended: single-vm
   supported:
-    - gateway
+    - single-vm
 
 # Deployment hooks (called by deployer)
 hooks:
@@ -14,7 +14,7 @@ hooks:
   configure: deployment/configure.sh
   healthcheck: deployment/healthcheck.sh
 
-# Gateway pattern variables
+# Single-VM pattern variables
 variables:
   domain:
     type: string
@@ -28,59 +28,29 @@ variables:
     default: ""
     required: false
 
-  # Gateway pattern specific variables
-  gateway_node:
+  # Single-VM pattern specific variables
+  vm_node:
     type: number
-    description: "Node ID for gateway VM (auto-selected if 0)"
+    description: "Node ID for VM deployment (auto-selected if 0)"
     default: 0
     required: false
 
-  internal_nodes:
-    type: list(number)
-    description: "Node IDs for backend VMs (auto-selected if empty)"
-    default: []
-    required: false
-
-  main_network:
-    type: string
-    description: "Network type for gateway (public, wireguard, mycelium)"
-    default: "public"
-    required: false
-
-  gateway_cpu:
+  vm_cpu:
     type: number
-    description: "Gateway VM CPU cores"
-    default: 2
+    description: "VM CPU cores"
+    default: 8
     required: false
 
-  gateway_memory:
+  vm_memory:
     type: number
-    description: "Gateway VM memory in MB"
-    default: 4096
+    description: "VM memory in MB"
+    default: 16384
     required: false
 
-  gateway_disk:
+  vm_disk:
     type: number
-    description: "Gateway VM disk in GB"
-    default: 50
-    required: false
-
-  internal_cpu:
-    type: number
-    description: "Backend VM CPU cores"
-    default: 4
-    required: false
-
-  internal_memory:
-    type: number
-    description: "Backend VM memory in MB"
-    default: 8192
-    required: false
-
-  internal_disk:
-    type: number
-    description: "Backend VM disk in GB"
-    default: 100
+    description: "VM disk in GB"
+    default: 200
     required: false
 
 # Resource requirements
