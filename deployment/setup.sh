@@ -76,10 +76,10 @@ chmod +x /opt/gitea/scripts/*.sh 2>/dev/null || true
 # Create Gitea configuration for auto-setup
 echo "⚙️ Creating Gitea configuration..."
 
-# Determine ROOT_URL based on available IPs
-ROOT_URL="http://localhost:3000/"
+# Determine ROOT_URL based on available IPs - must match reverse proxy path
+ROOT_URL="http://localhost/git/"
 if [ -n "${PRIMARY_IP:-}" ]; then
-    ROOT_URL="http://${PRIMARY_IP}:3000/"
+    ROOT_URL="http://${PRIMARY_IP}/git/"
 fi
 
 cat > /etc/gitea/app.ini << EOF
@@ -137,13 +137,17 @@ systemctl enable gitea || (echo "❌ Failed to enable gitea"; exit 1)
 echo "  Starting Gitea service..."
 systemctl start gitea || (echo "❌ Failed to start gitea"; exit 1)
 
-# Wait for Gitea to initialize
-echo "⏳ Waiting for Gitea to initialize..."
-sleep 10
+# Wait for Gitea to initialize database
+echo "⏳ Waiting for Gitea to initialize database..."
+sleep 15
 
-# Wait for Gitea to initialize
-echo "⏳ Waiting for Gitea to initialize..."
-sleep 10
+# Verify Gitea is responding
+echo "🔍 Checking if Gitea is responding..."
+timeout 30 bash -c 'until curl -f http://localhost:3000/api/v1/version >/dev/null 2>&1; do sleep 2; done' || {
+    echo "❌ Gitea failed to start properly"
+    systemctl status gitea
+    exit 1
+}
 
 # Create admin user
 echo "👤 Creating Gitea admin user..."
@@ -154,6 +158,11 @@ sudo -u gitea /usr/local/bin/gitea admin user create \
     --admin \
     --config /etc/gitea/app.ini \
     || echo "⚠️ Admin user may already exist"
+
+# Restart Gitea to apply configuration changes
+echo "🔄 Restarting Gitea to apply configuration..."
+systemctl restart gitea
+sleep 5
 
 echo "✅ Gitea installed and configured"
 echo "🌐 Gitea accessible at: http://localhost:3000/"
@@ -197,11 +206,32 @@ JSEOF
 echo "📦 Installing AI Agent dependencies..."
 npm init -y || (echo "❌ npm init failed"; exit 1)
 npm install express || (echo "❌ npm install failed"; exit 1)
-echo "  Starting AI Agent service..."
-node server.js &
-echo "  AI Agent started"
 
-echo "✅ AI Agent installed and started"
+# Create systemd service for AI Agent
+echo "🔧 Creating AI Agent systemd service..."
+cat > /etc/systemd/system/ai-agent.service << 'AGENTSERVICEEOF'
+[Unit]
+Description=AI Agent Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/ai-agent
+ExecStart=/usr/bin/node /opt/ai-agent/server.js
+Restart=always
+RestartSec=10
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target
+AGENTSERVICEEOF
+
+systemctl daemon-reload
+systemctl enable ai-agent
+systemctl start ai-agent
+
+echo "✅ AI Agent installed and started as systemd service"
 
 # Configure Nginx reverse proxy
 echo "🌐 Configuring Nginx reverse proxy..."
@@ -217,6 +247,10 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Port $server_port;
+        proxy_set_header X-Forwarded-Prefix /git;
+        proxy_buffering off;
     }
 
     # AI Agent API routing
@@ -248,8 +282,13 @@ NGINXEOL
 # Enable site
 ln -sf /etc/nginx/sites-available/ai-stack /etc/nginx/sites-enabled/
 rm -f /etc/nginx/sites-enabled/default
+
+# Test nginx configuration
+nginx -t || (echo "❌ Nginx configuration test failed"; exit 1)
+
+# Reload nginx
 systemctl reload nginx
 
-echo "✅ Nginx configured"
+echo "✅ Nginx configured and tested"
 
 echo "✅ All services installed and configured"

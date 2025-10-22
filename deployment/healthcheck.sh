@@ -35,7 +35,7 @@ EOF
 
 # Check web endpoints
 echo "Checking web endpoints..."
-if ! curl -f -s "http://${VM_IP}/git/" > /dev/null; then
+if ! curl -f -s -L "http://${VM_IP}/git/" > /dev/null; then
     echo "❌ Gitea web interface not accessible"
     exit 1
 fi
