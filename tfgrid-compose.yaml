@@ -3,10 +3,7 @@ version: 0.12.0-dev
 description: AI-powered development platform with integrated Git hosting and deployment
 
 # Pattern compatibility
-patterns:
-  recommended: tfgrid-ai-stack
-  supported:
-    - tfgrid-ai-stack
+pattern: tfgrid-ai-stack
 
 # Deployment hooks (called by deployer)
 hooks:
