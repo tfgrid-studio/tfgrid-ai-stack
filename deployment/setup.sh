@@ -75,12 +75,19 @@ chmod +x /opt/gitea/scripts/*.sh 2>/dev/null || true
 
 # Create Gitea configuration for auto-setup
 echo "⚙️ Creating Gitea configuration..."
+
+# Determine ROOT_URL based on available IPs
+ROOT_URL="http://localhost:3000/"
+if [ -n "${PRIMARY_IP:-}" ]; then
+    ROOT_URL="http://${PRIMARY_IP}:3000/"
+fi
+
 cat > /etc/gitea/app.ini << EOF
 WORK_PATH = /var/lib/gitea
 
 [server]
 HTTP_PORT = 3000
-ROOT_URL = http://localhost:3000/
+ROOT_URL = ${ROOT_URL}
 
 [database]
 DB_TYPE = sqlite3
@@ -129,6 +136,10 @@ echo "  Enabling Gitea service..."
 systemctl enable gitea || (echo "❌ Failed to enable gitea"; exit 1)
 echo "  Starting Gitea service..."
 systemctl start gitea || (echo "❌ Failed to start gitea"; exit 1)
+
+# Wait for Gitea to initialize
+echo "⏳ Waiting for Gitea to initialize..."
+sleep 10
 
 # Wait for Gitea to initialize
 echo "⏳ Waiting for Gitea to initialize..."
