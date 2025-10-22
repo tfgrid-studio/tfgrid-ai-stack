@@ -1,0 +1,46 @@
+name: tfgrid-ai-stack
+version: 0.12.0-dev
+description: AI-powered development platform with integrated Git hosting and deployment
+author: TFGrid Studio Team
+license: Apache-2.0
+
+# Use the tfgrid-ai-stack pattern
+pattern: tfgrid-ai-stack
+
+# Default resource allocation for the pattern
+resources:
+  gateway:
+    cpu: 2
+    memory: 4096
+    disk: 51200
+  ai_agent:
+    cpu: 4
+    memory: 8192
+    disk: 102400
+  gitea:
+    cpu: 2
+    memory: 4096
+    disk: 51200
+
+# Network configuration
+network:
+  main: wireguard
+  inter_node: wireguard
+
+# Tags for discovery
+tags:
+  - ai
+  - development
+  - git
+  - automation
+  - monitoring
+  - multi-vm
+
+# Metadata
+metadata:
+  category: development
+  maturity: beta
+  support_level: official
+  estimated_cost: high
+  deployment_time: "10 minutes"
+  complexity_level: advanced
