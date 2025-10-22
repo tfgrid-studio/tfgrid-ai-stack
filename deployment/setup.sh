@@ -6,7 +6,7 @@ set -e
 
 echo "🚀 Setting up tfgrid-ai-stack services on single VM..."
 
-# VM connection info
+# VM connection info - tfgrid-compose provides these automatically
 VM_IP="${PRIMARY_IP}"
 SSH_KEY_PATH="${SSH_KEY_PATH}"
 
