@@ -1,18 +1,13 @@
 #!/usr/bin/env bash
 # Setup script - Install and configure all tfgrid-ai-stack services
-# This runs after single-vm pattern infrastructure is deployed
+# This runs directly on the VM after tfgrid-compose has established SSH access
 
 set -e
 
 echo "🚀 Setting up tfgrid-ai-stack services on single VM..."
 
-# VM connection info - tfgrid-compose provides these automatically
-VM_IP="${PRIMARY_IP}"
-SSH_KEY_PATH="${SSH_KEY_PATH}"
-
 # Install Docker and dependencies
 echo "📦 Installing Docker and dependencies..."
-ssh -i "${SSH_KEY_PATH}" -o StrictHostKeyChecking=no root@${VM_IP} << 'EOF'
 apt update
 apt install -y docker.io docker-compose nginx certbot python3-certbot-nginx ufw
 
@@ -27,11 +22,9 @@ ufw allow 443
 ufw --force enable
 
 echo "✅ Docker and dependencies installed"
-EOF
 
 # Install Gitea
 echo "📦 Installing Gitea..."
-ssh -i "${SSH_KEY_PATH}" -o StrictHostKeyChecking=no root@${VM_IP} << 'EOF'
 # Create Gitea directories
 mkdir -p /opt/gitea
 cd /opt/gitea
@@ -72,11 +65,9 @@ systemctl enable gitea
 systemctl start gitea
 
 echo "✅ Gitea installed and started"
-EOF
 
 # Install AI Agent
 echo "🤖 Installing AI Agent..."
-ssh -i "${SSH_KEY_PATH}" -o StrictHostKeyChecking=no root@${VM_IP} << 'EOF'
 # Create AI Agent directories
 mkdir -p /opt/ai-agent
 cd /opt/ai-agent
@@ -112,11 +103,9 @@ npm install express
 node server.js &
 
 echo "✅ AI Agent installed and started"
-EOF
 
 # Configure Nginx reverse proxy
 echo "🌐 Configuring Nginx reverse proxy..."
-ssh -i "${SSH_KEY_PATH}" -o StrictHostKeyChecking=no root@${VM_IP} << 'EOF'
 cat > /etc/nginx/sites-available/ai-stack << 'NGINXEOL'
 server {
     listen 80;
@@ -163,6 +152,5 @@ rm -f /etc/nginx/sites-enabled/default
 systemctl reload nginx
 
 echo "✅ Nginx configured"
-EOF
 
 echo "✅ All services installed and configured"
