@@ -5,6 +5,9 @@
 set -e
 
 echo "🚀 Setting up tfgrid-ai-stack services on single VM..."
+echo "Current working directory: $(pwd)"
+echo "Available files in /tmp/app-source/:"
+ls -la /tmp/app-source/ 2>/dev/null || echo "No /tmp/app-source found"
 
 # Install Docker and dependencies
 echo "📦 Installing Docker and dependencies..."
