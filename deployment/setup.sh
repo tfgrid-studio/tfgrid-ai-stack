@@ -8,6 +8,12 @@ echo "🚀 Setting up tfgrid-ai-stack services on single VM..."
 echo "Current working directory: $(pwd)"
 echo "Available files in /tmp/app-source/:"
 ls -la /tmp/app-source/ 2>/dev/null || echo "No /tmp/app-source found"
+echo "Testing basic commands..."
+echo "  whoami: $(whoami)"
+echo "  id: $(id)"
+echo "  pwd: $(pwd)"
+echo "  ls /tmp/: $(ls /tmp/ 2>/dev/null | head -5)"
+echo "Basic commands completed"
 
 # Install Docker and dependencies
 echo "📦 Installing Docker and dependencies..."
