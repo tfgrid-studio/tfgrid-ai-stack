@@ -4,11 +4,13 @@ AI-powered development platform with integrated Git hosting and deployment.
 
 ## Overview
 
-This repository contains the complete TFGrid AI Stack pattern - a multi-VM deployment that provides an AI-powered development environment with integrated Git hosting. The pattern deploys three VMs connected via WireGuard VPN:
+TFGrid AI Stack is an app that deploys a complete AI-powered development platform using the gateway pattern. It automatically deploys and configures three components:
 
-- **Gateway VM**: Public API gateway with nginx, monitoring (Prometheus/Grafana), and SSL termination
-- **AI Agent VM**: Project creation and management APIs with AI assistance
-- **Gitea VM**: Git repository hosting with web interface
+- **Gateway VM**: Public API gateway with nginx routing, SSL termination, and monitoring
+- **AI Agent VM**: AI-powered project creation and code generation (deployed as tfgrid-ai-agent)
+- **Gitea VM**: Git repository hosting with web interface (deployed as tfgrid-gitea)
+
+All components are connected via private networking and accessible through clean URLs on a single domain.
 
 ## Quick Start
 
@@ -33,11 +35,20 @@ tfgrid-compose up tfgrid-ai-stack
 ```
 Internet
     ↓
-[Gateway VM] ← nginx, APIs, monitoring
+[Gateway VM] ← nginx routing, SSL, monitoring
     ↓ (WireGuard VPN)
-[AI Agent VM] ← project creation, code generation
-    ↓
-[Gitea VM] ← Git repositories, web interface
+├── [AI Agent VM] ← tfgrid-ai-agent app
+└── [Gitea VM] ← tfgrid-gitea app
+```
+
+### URL Structure
+```
+https://yourdomain.com/
+├── /                    → Gateway dashboard/API
+├── /git/               → Gitea web interface
+├── /api/               → AI Agent API endpoints
+├── /monitoring/        → Prometheus/Grafana
+└── /project1/          → AI-generated projects
 ```
 
 ## Usage
@@ -115,23 +126,26 @@ The pattern supports extensive customization through variables:
 - **Disk**: 200GB total (default)
 - **Cost**: ~$15-20/month (varies by node pricing)
 
-## Pattern Structure
+## App Structure
 
 ```
 tfgrid-ai-stack/
-├── tfgrid-compose.yaml    # Pattern definition
-├── infrastructure/        # Terraform configuration
-├── platform/             # Ansible playbooks and roles
-├── scripts/              # CLI command scripts
-├── ai-agent-api/         # AI Agent API source
-├── gateway-api/          # Gateway API source
+├── tfgrid-compose.yaml    # App definition (uses gateway pattern)
+├── deployment/            # Component orchestration hooks
+│   ├── setup.sh          # Deploy ai-agent + gitea components
+│   ├── configure.sh      # Configure nginx routing
+│   └── healthcheck.sh    # Verify component health
+├── scripts/              # AI project management scripts
 ├── README.md             # This file
 └── LICENSE               # Apache 2.0
 ```
 
 ## Development
 
-This pattern is maintained by TFGrid Studio. The reference implementation is also available in the [tfgrid-compose patterns directory](https://github.com/tfgrid-studio/tfgrid-compose/tree/main/patterns/tfgrid-ai-stack).
+This app is maintained by TFGrid Studio. It orchestrates the deployment of:
+- [tfgrid-ai-agent](https://github.com/tfgrid-studio/tfgrid-ai-agent) - AI coding assistant
+- [tfgrid-gitea](https://github.com/tfgrid-studio/tfgrid-gitea) - Git hosting
+- Gateway pattern from [tfgrid-compose](https://github.com/tfgrid-studio/tfgrid-compose) - Infrastructure
 
 ## Documentation
 

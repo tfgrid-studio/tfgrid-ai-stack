@@ -4,15 +4,29 @@ description: AI-powered development platform with integrated Git hosting and dep
 
 # Pattern compatibility
 patterns:
-  recommended: tfgrid-ai-stack
+  recommended: gateway
   supported:
-    - tfgrid-ai-stack
+    - gateway
 
 # Deployment hooks (called by deployer)
 hooks:
   setup: deployment/setup.sh
   configure: deployment/configure.sh
   healthcheck: deployment/healthcheck.sh
+
+# Gateway pattern variables
+variables:
+  domain:
+    type: string
+    description: "Domain name for public access (leave empty for private mode)"
+    default: ""
+    required: false
+
+  ssl_email:
+    type: string
+    description: "Email for SSL certificate (required if domain set)"
+    default: ""
+    required: false
 
 # Resource requirements
 resources:
@@ -84,6 +98,18 @@ commands:
     description: "Create a new project with AI"
     args: "[description]"
     interactive: true
+
+  deploy-components:
+    description: "Deploy AI Agent and Gitea components"
+    script: deployment/setup.sh
+
+  wire-components:
+    description: "Configure component networking and routing"
+    script: deployment/configure.sh
+
+  check-health:
+    description: "Verify all components are healthy"
+    script: deployment/healthcheck.sh
 
   projects:
     script: scripts/list-projects.sh

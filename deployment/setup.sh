@@ -1,12 +1,25 @@
 #!/usr/bin/env bash
-# Setup script - Prepare the environment for tfgrid-ai-stack
-# This runs on the VMs during deployment
+# Setup script - Deploy tfgrid-ai-stack components
+# This runs after gateway pattern infrastructure is deployed
 
 set -e
 
-echo "🚀 Setting up tfgrid-ai-stack..."
+echo "🚀 Setting up tfgrid-ai-stack components..."
 
-# The actual infrastructure setup is handled by the tfgrid-ai-stack pattern
-# This hook ensures the app-specific setup is complete
+# Get gateway VM connection info
+GATEWAY_IP="${PRIMARY_IP}"
+GATEWAY_SSH_KEY="${SSH_KEY_PATH}"
 
-echo "✅ Setup completed - infrastructure deployment handled by pattern"
+# Deploy AI Agent component
+echo "🤖 Deploying AI Agent..."
+tfgrid-compose up tfgrid-ai-agent --pattern single-vm --name ai-agent-${DEPLOYMENT_NAME}
+
+# Deploy Gitea component
+echo "📦 Deploying Gitea..."
+tfgrid-compose up tfgrid-gitea --pattern single-vm --name gitea-${DEPLOYMENT_NAME}
+
+# Wait for components to be ready
+echo "⏳ Waiting for components to initialize..."
+sleep 30
+
+echo "✅ Component deployment completed"
