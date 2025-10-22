@@ -25,41 +25,39 @@ echo "✅ Docker and dependencies installed"
 
 # Install Gitea
 echo "📦 Installing Gitea..."
-# Create Gitea directories
-mkdir -p /opt/gitea
-cd /opt/gitea
+# Install system dependencies
+apt-get update
+apt-get install -y git curl wget sqlite3
 
-# Download and run Gitea
-wget -O gitea https://dl.gitea.com/gitea/1.21/gitea-1.21.11-linux-amd64
-chmod +x gitea
+# Create gitea user
+if ! id -u gitea >/dev/null 2>&1; then
+    useradd -m -s /bin/bash gitea
+    echo "✅ Created gitea user"
+else
+    echo "ℹ️  Gitea user already exists"
+fi
 
-# Create Gitea user
-useradd --system --shell /bin/bash --home /opt/gitea --create-home --comment "Git Version Control" git
+# Download and install Gitea
+GITEA_VERSION="1.24.6"
+curl -fsSL "https://github.com/go-gitea/gitea/releases/download/v${GITEA_VERSION}/gitea-${GITEA_VERSION}-linux-amd64" -o gitea
+mv gitea /usr/local/bin/
+chmod +x /usr/local/bin/gitea
 
-# Configure Gitea
-mkdir -p /etc/gitea
-chown -R git:git /opt/gitea /etc/gitea
+# Create directories
+mkdir -p /etc/gitea /var/lib/gitea/data /var/log/gitea
+chown -R gitea:gitea /etc/gitea /var/lib/gitea /var/log/gitea
 
-cat > /etc/systemd/system/gitea.service << 'SERVICEEOF'
-[Unit]
-Description=Gitea (Git with a cup of tea)
-After=syslog.target
-After=network.target
+# Create gitea scripts directory
+mkdir -p /opt/gitea/scripts
 
-[Service]
-RestartSec=2s
-Type=simple
-User=git
-Group=git
-WorkingDirectory=/opt/gitea
-ExecStart=/opt/gitea/gitea web --config /etc/gitea/app.ini
-Restart=always
-Environment=USER=git HOME=/opt/gitea GITEA_WORK_DIR=/opt/gitea
+# Copy agent scripts (tfgrid-compose flattens src/ directory)
+cp -r /tmp/app-source/scripts /opt/gitea/ 2>/dev/null || echo "ℹ️  No scripts to copy"
 
-[Install]
-WantedBy=multi-user.target
-SERVICEEOF
+# Make scripts executable
+chmod +x /opt/gitea/scripts/*.sh 2>/dev/null || true
 
+# Install systemd service
+cp /tmp/app-source/systemd/gitea.service /etc/systemd/system/ 2>/dev/null || echo "ℹ️  No systemd service to copy"
 systemctl daemon-reload
 systemctl enable gitea
 systemctl start gitea
