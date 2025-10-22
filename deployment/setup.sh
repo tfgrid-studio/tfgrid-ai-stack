@@ -8,8 +8,11 @@ echo "🚀 Setting up tfgrid-ai-stack services on single VM..."
 
 # Install Docker and dependencies
 echo "📦 Installing Docker and dependencies..."
-apt update
-apt install -y docker.io docker-compose nginx certbot python3-certbot-nginx ufw
+echo "  Running apt update..."
+apt update -y || (echo "❌ apt update failed"; exit 1)
+echo "  Installing packages..."
+DEBIAN_FRONTEND=noninteractive apt install -y docker.io docker-compose nginx certbot python3-certbot-nginx ufw || (echo "❌ apt install failed"; exit 1)
+echo "  Docker installation completed"
 
 # Enable Docker
 systemctl enable docker
@@ -26,8 +29,10 @@ echo "✅ Docker and dependencies installed"
 # Install Gitea
 echo "📦 Installing Gitea..."
 # Install system dependencies
-apt-get update
-apt-get install -y git curl wget sqlite3
+echo "📦 Installing system dependencies..."
+apt-get update -y || (echo "❌ apt-get update failed"; exit 1)
+DEBIAN_FRONTEND=noninteractive apt-get install -y git curl wget sqlite3 || (echo "❌ apt-get install failed"; exit 1)
+echo "  System dependencies installed"
 
 # Create gitea user
 if ! id -u gitea >/dev/null 2>&1; then
@@ -38,10 +43,13 @@ else
 fi
 
 # Download and install Gitea
+echo "📦 Installing Gitea..."
 GITEA_VERSION="1.24.6"
-curl -fsSL "https://github.com/go-gitea/gitea/releases/download/v${GITEA_VERSION}/gitea-${GITEA_VERSION}-linux-amd64" -o gitea
+echo "  Downloading Gitea ${GITEA_VERSION}..."
+curl -fsSL "https://github.com/go-gitea/gitea/releases/download/v${GITEA_VERSION}/gitea-${GITEA_VERSION}-linux-amd64" -o gitea || (echo "❌ Gitea download failed"; exit 1)
 mv gitea /usr/local/bin/
 chmod +x /usr/local/bin/gitea
+echo "  Gitea installed"
 
 # Create directories
 mkdir -p /etc/gitea /var/lib/gitea/data /var/log/gitea
@@ -57,13 +65,17 @@ cp -r /tmp/app-source/scripts /opt/gitea/ 2>/dev/null || echo "ℹ️  No script
 chmod +x /opt/gitea/scripts/*.sh 2>/dev/null || true
 
 # Install systemd services
+echo "🔧 Installing systemd services..."
 cp /tmp/app-source/systemd/gitea.service /etc/systemd/system/ 2>/dev/null || echo "ℹ️  No gitea systemd service to copy"
 cp /tmp/app-source/systemd/ai-agent.service /etc/systemd/system/ 2>/dev/null || echo "ℹ️  No ai-agent systemd service to copy"
-systemctl daemon-reload
-systemctl enable gitea
-systemctl enable ai-agent
-systemctl start gitea
-systemctl start ai-agent
+systemctl daemon-reload || (echo "❌ systemctl daemon-reload failed"; exit 1)
+echo "  Enabling services..."
+systemctl enable gitea || (echo "❌ Failed to enable gitea"; exit 1)
+systemctl enable ai-agent || (echo "❌ Failed to enable ai-agent"; exit 1)
+echo "  Starting services..."
+systemctl start gitea || (echo "❌ Failed to start gitea"; exit 1)
+systemctl start ai-agent || (echo "❌ Failed to start ai-agent"; exit 1)
+echo "  Services started"
 
 echo "✅ Gitea installed and started"
 
@@ -74,8 +86,10 @@ mkdir -p /opt/ai-agent
 cd /opt/ai-agent
 
 # Install Node.js and npm
-curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-apt-get install -y nodejs
+echo "📦 Installing Node.js..."
+curl -fsSL https://deb.nodesource.com/setup_18.x | bash - || (echo "❌ Node.js setup failed"; exit 1)
+DEBIAN_FRONTEND=noninteractive apt-get install -y nodejs || (echo "❌ Node.js install failed"; exit 1)
+echo "  Node.js installed"
 
 # Clone and setup AI Agent (placeholder - replace with actual repo)
 # git clone https://github.com/tfgrid-studio/tfgrid-ai-agent.git .
@@ -99,9 +113,12 @@ app.listen(8080, () => console.log('AI Agent listening on port 8080'));
 JSEOF
 
 # Install dependencies and run
-npm init -y
-npm install express
+echo "📦 Installing AI Agent dependencies..."
+npm init -y || (echo "❌ npm init failed"; exit 1)
+npm install express || (echo "❌ npm install failed"; exit 1)
+echo "  Starting AI Agent service..."
 node server.js &
+echo "  AI Agent started"
 
 echo "✅ AI Agent installed and started"
 
