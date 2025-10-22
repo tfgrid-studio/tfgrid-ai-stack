@@ -28,6 +28,61 @@ variables:
     default: ""
     required: false
 
+  # Gateway pattern specific variables
+  gateway_node:
+    type: number
+    description: "Node ID for gateway VM (auto-selected if 0)"
+    default: 0
+    required: false
+
+  internal_nodes:
+    type: list(number)
+    description: "Node IDs for backend VMs (auto-selected if empty)"
+    default: []
+    required: false
+
+  main_network:
+    type: string
+    description: "Network type for gateway (public, wireguard, mycelium)"
+    default: "public"
+    required: false
+
+  gateway_cpu:
+    type: number
+    description: "Gateway VM CPU cores"
+    default: 2
+    required: false
+
+  gateway_memory:
+    type: number
+    description: "Gateway VM memory in MB"
+    default: 4096
+    required: false
+
+  gateway_disk:
+    type: number
+    description: "Gateway VM disk in GB"
+    default: 50
+    required: false
+
+  internal_cpu:
+    type: number
+    description: "Backend VM CPU cores"
+    default: 4
+    required: false
+
+  internal_memory:
+    type: number
+    description: "Backend VM memory in MB"
+    default: 8192
+    required: false
+
+  internal_disk:
+    type: number
+    description: "Backend VM disk in GB"
+    default: 100
+    required: false
+
 # Resource requirements
 resources:
   cpu:
