@@ -118,6 +118,10 @@ status:
 
 # App-specific commands
 commands:
+  launch:
+    script: scripts/launch.sh
+    description: "Open tfgrid-ai-stack web interface in browser"
+
   create:
     script: scripts/create-project.sh
     description: "Create a new project with AI"
