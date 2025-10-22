@@ -73,20 +73,81 @@ cp -r /tmp/app-source/scripts /opt/gitea/ 2>/dev/null || echo "ℹ️  No script
 # Make scripts executable
 chmod +x /opt/gitea/scripts/*.sh 2>/dev/null || true
 
-# Install systemd services
-echo "🔧 Installing systemd services..."
-cp /tmp/app-source/systemd/gitea.service /etc/systemd/system/ 2>/dev/null || echo "ℹ️  No gitea systemd service to copy"
-cp /tmp/app-source/systemd/ai-agent.service /etc/systemd/system/ 2>/dev/null || echo "ℹ️  No ai-agent systemd service to copy"
-systemctl daemon-reload || (echo "❌ systemctl daemon-reload failed"; exit 1)
-echo "  Enabling services..."
-systemctl enable gitea || (echo "❌ Failed to enable gitea"; exit 1)
-systemctl enable ai-agent || (echo "❌ Failed to enable ai-agent"; exit 1)
-echo "  Starting services..."
-systemctl start gitea || (echo "❌ Failed to start gitea"; exit 1)
-systemctl start ai-agent || (echo "❌ Failed to start ai-agent"; exit 1)
-echo "  Services started"
+# Create Gitea configuration for auto-setup
+echo "⚙️ Creating Gitea configuration..."
+cat > /etc/gitea/app.ini << EOF
+WORK_PATH = /var/lib/gitea
 
-echo "✅ Gitea installed and started"
+[server]
+HTTP_PORT = 3000
+ROOT_URL = http://localhost:3000/
+
+[database]
+DB_TYPE = sqlite3
+PATH = /var/lib/gitea/data/gitea.db
+
+[security]
+INSTALL_LOCK = true
+SECRET_KEY = $(openssl rand -hex 32)
+INTERNAL_TOKEN = $(openssl rand -hex 32)
+
+[service]
+DISABLE_REGISTRATION = false
+REQUIRE_SIGNIN_VIEW = false
+
+[oauth2]
+JWT_SECRET = $(openssl rand -hex 32)
+EOF
+
+# Set proper ownership
+chown gitea:gitea /etc/gitea/app.ini
+
+# Install systemd service for Gitea
+echo "🔧 Installing Gitea systemd service..."
+cat > /etc/systemd/system/gitea.service << 'SERVICEEOF'
+[Unit]
+Description=Gitea (Git with a cup of tea)
+After=syslog.target
+After=network.target
+
+[Service]
+RestartSec=2s
+Type=simple
+User=gitea
+Group=gitea
+WorkingDirectory=/var/lib/gitea
+ExecStart=/usr/local/bin/gitea web --config /etc/gitea/app.ini
+Restart=always
+Environment=USER=gitea HOME=/var/lib/gitea GITEA_WORK_DIR=/var/lib/gitea
+
+[Install]
+WantedBy=multi-user.target
+SERVICEEOF
+
+systemctl daemon-reload || (echo "❌ systemctl daemon-reload failed"; exit 1)
+echo "  Enabling Gitea service..."
+systemctl enable gitea || (echo "❌ Failed to enable gitea"; exit 1)
+echo "  Starting Gitea service..."
+systemctl start gitea || (echo "❌ Failed to start gitea"; exit 1)
+
+# Wait for Gitea to initialize
+echo "⏳ Waiting for Gitea to initialize..."
+sleep 10
+
+# Create admin user
+echo "👤 Creating Gitea admin user..."
+sudo -u gitea /usr/local/bin/gitea admin user create \
+    --username "gitadmin" \
+    --password "changeme123" \
+    --email "admin@localhost" \
+    --admin \
+    --config /etc/gitea/app.ini \
+    || echo "⚠️ Admin user may already exist"
+
+echo "✅ Gitea installed and configured"
+echo "🌐 Gitea accessible at: http://localhost:3000/"
+echo "👤 Admin user: gitadmin"
+echo "🔑 Admin password: changeme123"
 
 # Install AI Agent
 echo "🤖 Installing AI Agent..."

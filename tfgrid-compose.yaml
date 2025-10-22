@@ -124,17 +124,48 @@ commands:
     args: "[description]"
     interactive: true
 
-  deploy-components:
-    description: "Deploy AI Agent and Gitea components"
-    script: deployment/setup.sh
+  select-project:
+    description: "Select active project for commands"
+    args: "[project-name]"
+    script: scripts/select-project.sh
 
-  wire-components:
-    description: "Configure component networking and routing"
-    script: deployment/configure.sh
+  run:
+    description: "Start AI agent loop for a project"
+    args: "[project-name]"
+    uses_context: active_project
+    script: scripts/run-project.sh
+    interactive: true
 
-  check-health:
-    description: "Verify all components are healthy"
-    script: deployment/healthcheck.sh
+  monitor:
+    description: "Monitor project progress"
+    args: "[project-name]"
+    uses_context: active_project
+    script: scripts/monitor-project.sh
+    interactive: true
+
+  projects:
+    description: "List all projects"
+    script: scripts/list-projects.sh
+
+  stop:
+    description: "Stop AI agent for a project"
+    args: "[project-name]"
+    uses_context: active_project
+    script: scripts/stop-project.sh
+
+  delete:
+    description: "Delete a project"
+    args: "[project-name]"
+    script: scripts/delete-project.sh
+
+  login:
+    description: "Authenticate with AI service"
+    script: scripts/login.sh
+    interactive: true
+
+  status:
+    description: "Show system status"
+    script: scripts/status.sh
 
   projects:
     script: scripts/list-projects.sh
