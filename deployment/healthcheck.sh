@@ -1,13 +1,12 @@
-#!/bin/bash
-# TFGrid AI Stack - Health Check Hook
-# This script is called to verify the deployment is healthy
+#!/usr/bin/env bash
+# Health check script - Verify tfgrid-ai-stack deployment
+# This runs after configuration to ensure everything is operational
 
 set -e
 
-echo "🏥 TFGrid AI Stack Health Check"
-echo "==============================="
+echo "🏥 Running health checks for tfgrid-ai-stack..."
 
 # The actual health checks are defined in the pattern's tfgrid-compose.yaml
 # This hook provides additional app-specific health validation
 
-echo "✅ Health check completed - pattern health checks will monitor services"
+echo "✅ Health check completed - services monitored by pattern health checks"

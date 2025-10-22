@@ -1,13 +1,12 @@
-#!/bin/bash
-# TFGrid AI Stack - Setup Hook
-# This script is called during the setup phase of deployment
+#!/usr/bin/env bash
+# Setup script - Prepare the environment for tfgrid-ai-stack
+# This runs on the VMs during deployment
 
 set -e
 
-echo "🚀 TFGrid AI Stack Setup"
-echo "========================"
+echo "🚀 Setting up tfgrid-ai-stack..."
 
-# The actual setup is handled by the tfgrid-ai-stack pattern
-# This hook ensures the pattern is properly initialized
+# The actual infrastructure setup is handled by the tfgrid-ai-stack pattern
+# This hook ensures the app-specific setup is complete
 
-echo "✅ Setup completed - pattern will handle infrastructure deployment"
+echo "✅ Setup completed - infrastructure deployment handled by pattern"
