@@ -45,4 +45,16 @@ if ! curl -f -s "http://${VM_IP}/api/health" > /dev/null; then
     exit 1
 fi
 
+# Check systemd services
+echo "Checking systemd services..."
+if ! systemctl is-active --quiet gitea; then
+    echo "❌ Gitea systemd service not running"
+    exit 1
+fi
+
+if ! systemctl is-active --quiet ai-agent; then
+    echo "❌ AI Agent systemd service not running"
+    exit 1
+fi
+
 echo "✅ All services are healthy and accessible"
