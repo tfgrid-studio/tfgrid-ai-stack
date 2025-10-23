@@ -187,19 +187,283 @@ echo "  Node.js installed"
 # npm install
 # npm run build
 
-# For now, create a simple AI Agent service
+# Create full AI Agent service with project management API
 cat > /opt/ai-agent/server.js << 'JSEOF'
 const express = require('express');
+const { spawn } = require('child_process');
+const path = require('path');
+const fs = require('fs').promises;
+
 const app = express();
 app.use(express.json());
 
-app.get('/health', (req, res) => res.json({ status: 'ok' }));
-app.post('/create-project', (req, res) => {
-  // Placeholder AI project creation
-  res.json({ project: 'created', id: Date.now() });
+// Project workspace
+const PROJECTS_DIR = '/opt/ai-agent/projects';
+
+// Ensure projects directory exists
+fs.mkdir(PROJECTS_DIR, { recursive: true }).catch(console.error);
+
+// Health check
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-app.listen(8080, () => console.log('AI Agent listening on port 8080'));
+// List all projects
+app.get('/api/projects', async (req, res) => {
+  try {
+    const projects = [];
+    const entries = await fs.readdir(PROJECTS_DIR, { withFileTypes: true });
+
+    for (const entry of entries) {
+      if (entry.isDirectory()) {
+        const projectPath = path.join(PROJECTS_DIR, entry.name);
+        const statusFile = path.join(projectPath, '.project-status.json');
+
+        let status = 'unknown';
+        try {
+          const statusData = await fs.readFile(statusFile, 'utf8');
+          const statusJson = JSON.parse(statusData);
+          status = statusJson.status || 'unknown';
+        } catch (e) {
+          // Status file doesn't exist or is invalid
+        }
+
+        projects.push({
+          name: entry.name,
+          path: projectPath,
+          status: status,
+          created: await getDirCreationTime(projectPath)
+        });
+      }
+    }
+
+    res.json({ projects });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Create new project
+app.post('/api/projects', async (req, res) => {
+  try {
+    const { name, description, template } = req.body;
+
+    if (!name) {
+      return res.status(400).json({ error: 'Project name is required' });
+    }
+
+    const projectPath = path.join(PROJECTS_DIR, name);
+
+    // Check if project already exists
+    try {
+      await fs.access(projectPath);
+      return res.status(409).json({ error: 'Project already exists' });
+    } catch (e) {
+      // Project doesn't exist, good
+    }
+
+    // Create project directory
+    await fs.mkdir(projectPath, { recursive: true });
+
+    // Initialize project status
+    const statusData = {
+      name,
+      description: description || '',
+      status: 'created',
+      created: new Date().toISOString(),
+      template: template || 'generic'
+    };
+
+    await fs.writeFile(
+      path.join(projectPath, '.project-status.json'),
+      JSON.stringify(statusData, null, 2)
+    );
+
+    // Initialize git repository
+    await runCommand('git', ['init'], { cwd: projectPath });
+    await runCommand('git', ['config', 'user.name', 'AI Agent'], { cwd: projectPath });
+    await runCommand('git', ['config', 'user.email', 'ai@localhost'], { cwd: projectPath });
+
+    res.json({
+      project: name,
+      path: projectPath,
+      status: 'created',
+      message: 'Project created successfully'
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get project status
+app.get('/api/projects/:name', async (req, res) => {
+  try {
+    const { name } = req.params;
+    const projectPath = path.join(PROJECTS_DIR, name);
+
+    // Check if project exists
+    try {
+      await fs.access(projectPath);
+    } catch (e) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+
+    // Read project status
+    const statusFile = path.join(projectPath, '.project-status.json');
+    let statusData = { name, status: 'unknown' };
+
+    try {
+      const statusContent = await fs.readFile(statusFile, 'utf8');
+      statusData = { ...statusData, ...JSON.parse(statusContent) };
+    } catch (e) {
+      // Status file doesn't exist or is invalid
+    }
+
+    res.json(statusData);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Start project (run agent loop)
+app.post('/api/projects/:name/run', async (req, res) => {
+  try {
+    const { name } = req.params;
+    const projectPath = path.join(PROJECTS_DIR, name);
+
+    // Check if project exists
+    try {
+      await fs.access(projectPath);
+    } catch (e) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+
+    // Update status to running
+    await updateProjectStatus(name, 'running');
+
+    // Start agent loop in background
+    const scriptPath = '/opt/ai-agent/scripts/agent-loop.sh';
+    const child = spawn('bash', [scriptPath, name], {
+      cwd: projectPath,
+      detached: true,
+      stdio: 'ignore'
+    });
+
+    child.unref();
+
+    res.json({
+      project: name,
+      status: 'running',
+      message: 'Agent loop started'
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Stop project
+app.post('/api/projects/:name/stop', async (req, res) => {
+  try {
+    const { name } = req.params;
+
+    // Find and kill agent processes for this project
+    const result = await runCommand('pkill', ['-f', `agent-loop.sh ${name}`]);
+
+    // Update status
+    await updateProjectStatus(name, 'stopped');
+
+    res.json({
+      project: name,
+      status: 'stopped',
+      message: 'Agent loop stopped'
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Delete project
+app.delete('/api/projects/:name', async (req, res) => {
+  try {
+    const { name } = req.params;
+    const projectPath = path.join(PROJECTS_DIR, name);
+
+    // Stop any running processes first
+    try {
+      await runCommand('pkill', ['-f', `agent-loop.sh ${name}`]);
+    } catch (e) {
+      // Ignore if no processes running
+    }
+
+    // Remove project directory
+    await fs.rm(projectPath, { recursive: true, force: true });
+
+    res.json({
+      project: name,
+      message: 'Project deleted successfully'
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Helper functions
+async function getDirCreationTime(dirPath) {
+  try {
+    const stats = await fs.stat(dirPath);
+    return stats.birthtime || stats.ctime;
+  } catch (e) {
+    return new Date().toISOString();
+  }
+}
+
+async function updateProjectStatus(projectName, status) {
+  try {
+    const projectPath = path.join(PROJECTS_DIR, projectName);
+    const statusFile = path.join(projectPath, '.project-status.json');
+
+    let statusData = { name: projectName };
+    try {
+      const existing = await fs.readFile(statusFile, 'utf8');
+      statusData = { ...statusData, ...JSON.parse(existing) };
+    } catch (e) {
+      // File doesn't exist
+    }
+
+    statusData.status = status;
+    statusData.updated = new Date().toISOString();
+
+    await fs.writeFile(statusFile, JSON.stringify(statusData, null, 2));
+  } catch (error) {
+    console.error('Failed to update project status:', error);
+  }
+}
+
+function runCommand(cmd, args, options = {}) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(cmd, args, { ...options, stdio: 'pipe' });
+    let stdout = '';
+    let stderr = '';
+
+    child.stdout.on('data', (data) => stdout += data.toString());
+    child.stderr.on('data', (data) => stderr += data.toString());
+
+    child.on('close', (code) => {
+      if (code === 0) {
+        resolve({ stdout, stderr });
+      } else {
+        reject(new Error(`Command failed: ${stderr || stdout}`));
+      }
+    });
+
+    child.on('error', reject);
+  });
+}
+
+app.listen(8080, () => {
+  console.log('AI Agent API server listening on port 8080');
+  console.log('Projects directory:', PROJECTS_DIR);
+});
 JSEOF
 
 # Install dependencies and run

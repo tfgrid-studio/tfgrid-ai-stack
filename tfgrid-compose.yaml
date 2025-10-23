@@ -130,67 +130,89 @@ commands:
 
   create:
     script: scripts/create-project.sh
-    description: "Create a new project with AI"
-    args: "[description]"
+    description: "Create a new AI coding project"
+    args: "[project-name] [description]"
     interactive: true
 
   select-project:
+    script: scripts/select-project.sh
     description: "Select active project for commands"
     args: "[project-name]"
-    script: scripts/select-project.sh
+    save_to_context: active_project
 
   run:
-    description: "Start AI agent loop for a project"
+    script: scripts/run-project.sh
+    description: "Start agent loop for a project"
     args: "[project-name]"
     uses_context: active_project
-    script: scripts/run-project.sh
     interactive: true
+    allocate_tty: false
+
+  stop:
+    script: scripts/stop-project.sh
+    description: "Stop agent loop for a project"
+    args: "[project-name]"
+    uses_context: active_project
 
   monitor:
+    script: scripts/monitor-project.sh
     description: "Monitor project progress"
     args: "[project-name]"
     uses_context: active_project
-    script: scripts/monitor-project.sh
     interactive: true
+    allocate_tty: true
 
   projects:
-    description: "List all projects"
     script: scripts/list-projects.sh
+    description: "Show status of all projects"
 
-  stop:
-    description: "Stop AI agent for a project"
-    args: "[project-name]"
-    uses_context: active_project
-    script: scripts/stop-project.sh
-
-  delete:
+  remove:
+    script: scripts/remove-project.sh
     description: "Delete a project"
     args: "[project-name]"
-    script: scripts/delete-project.sh
+    uses_context: active_project
+
+  logs:
+    script: scripts/logs-project.sh
+    description: "View project logs"
+    args: "[project-name]"
+    uses_context: active_project
+
+  summary:
+    script: scripts/summary-project.sh
+    description: "Show project summary"
+    args: "[project-name]"
+    uses_context: active_project
+
+  restart:
+    script: scripts/restart-project.sh
+    description: "Restart agent for a project"
+    args: "[project-name]"
+    uses_context: active_project
+    allocate_tty: false
+
+  stopall:
+    script: scripts/stopall-projects.sh
+    description: "Stop all running projects"
+
+  edit:
+    script: scripts/edit-project.sh
+    description: "Edit project configuration"
+    args: "[project-name]"
 
   login:
-    description: "Authenticate with AI service"
     script: scripts/login.sh
+    description: "Authenticate with Qwen (OAuth)"
     interactive: true
+    allocate_tty: true
+
+  whoami:
+    script: scripts/whoami.sh
+    description: "Check Qwen authentication status"
 
   status:
     description: "Show system status"
     script: scripts/status.sh
-
-  projects:
-    script: scripts/list-projects.sh
-    description: "List all projects"
-
-  monitor:
-    script: scripts/monitor-project.sh
-    description: "Monitor project logs"
-    args: "[project-name]"
-    interactive: true
-
-  delete:
-    script: scripts/delete-project.sh
-    description: "Delete a project"
-    args: "[project-name]"
 
   backup:
     script: scripts/manual-backup.sh
