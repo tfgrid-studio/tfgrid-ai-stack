@@ -68,9 +68,17 @@ chown -R gitea:gitea /etc/gitea /var/lib/gitea /var/log/gitea
 mkdir -p /opt/tfgrid-ai-stack/scripts/gitea
 mkdir -p /opt/tfgrid-ai-stack/scripts/ai-agent
 
-# Scripts are already flattened by tfgrid-compose from src/scripts/ to scripts/
-# Keep them in the deployment directory as-is for compatibility
-# All scripts are available in scripts/ directory
+# Copy scripts to the installation directory for tfgrid-compose absolute path references
+# tfgrid-compose flattens src/scripts/ to scripts/ in deployment directory, but commands expect absolute paths
+
+# Create installation directory
+mkdir -p /opt/tfgrid-ai-stack/scripts
+
+# Copy all scripts from deployment scripts/ to installation directory
+cp -r scripts/* /opt/tfgrid-ai-stack/scripts/ 2>/dev/null || echo "ℹ️  No scripts to copy from deployment directory"
+
+# Make all scripts executable
+chmod +x /opt/tfgrid-ai-stack/scripts/*.sh 2>/dev/null || true
 
 # Make all scripts executable
 chmod +x /opt/tfgrid-ai-stack/scripts/gitea/*.sh 2>/dev/null || true

@@ -125,23 +125,23 @@ status:
 # App-specific commands
 commands:
   launch:
-    script: scripts/launch.sh
+    script: /opt/tfgrid-ai-stack/scripts/launch.sh
     description: "Open tfgrid-ai-stack web interface in browser"
 
   create:
-    script: scripts/create-project.sh
+    script: /opt/tfgrid-ai-stack/scripts/create-project.sh
     description: "Create a new AI coding project"
     args: "[project-name] [description]"
     interactive: true
 
   select-project:
-    script: scripts/select-project.sh
+    script: /opt/tfgrid-ai-stack/scripts/select-project.sh
     description: "Select active project for commands"
     args: "[project-name]"
     save_to_context: active_project
 
   run:
-    script: scripts/run-project.sh
+    script: /opt/tfgrid-ai-stack/scripts/run-project.sh
     description: "Start agent loop for a project"
     args: "[project-name]"
     uses_context: active_project
@@ -149,13 +149,13 @@ commands:
     allocate_tty: false
 
   stop:
-    script: scripts/stop-project.sh
+    script: /opt/tfgrid-ai-stack/scripts/stop-project.sh
     description: "Stop agent loop for a project"
     args: "[project-name]"
     uses_context: active_project
 
   monitor:
-    script: scripts/monitor-project.sh
+    script: /opt/tfgrid-ai-stack/scripts/monitor-project.sh
     description: "Monitor project progress"
     args: "[project-name]"
     uses_context: active_project
@@ -163,63 +163,63 @@ commands:
     allocate_tty: true
 
   projects:
-    script: scripts/list-projects.sh
+    script: /opt/tfgrid-ai-stack/scripts/list-projects.sh
     description: "Show status of all projects"
 
   remove:
-    script: scripts/remove-project.sh
+    script: /opt/tfgrid-ai-stack/scripts/remove-project.sh
     description: "Delete a project"
     args: "[project-name]"
     uses_context: active_project
 
   logs:
-    script: scripts/logs-project.sh
+    script: /opt/tfgrid-ai-stack/scripts/logs-project.sh
     description: "View project logs"
     args: "[project-name]"
     uses_context: active_project
 
   summary:
-    script: scripts/summary-project.sh
+    script: /opt/tfgrid-ai-stack/scripts/summary-project.sh
     description: "Show project summary"
     args: "[project-name]"
     uses_context: active_project
 
   restart:
-    script: scripts/restart-project.sh
+    script: /opt/tfgrid-ai-stack/scripts/restart-project.sh
     description: "Restart agent for a project"
     args: "[project-name]"
     uses_context: active_project
     allocate_tty: false
 
   stopall:
-    script: scripts/stopall-projects.sh
+    script: /opt/tfgrid-ai-stack/scripts/stopall-projects.sh
     description: "Stop all running projects"
 
   edit:
-    script: scripts/edit-project.sh
+    script: /opt/tfgrid-ai-stack/scripts/edit-project.sh
     description: "Edit project configuration"
     args: "[project-name]"
 
   login:
-    script: scripts/login.sh
+    script: /opt/tfgrid-ai-stack/scripts/login.sh
     description: "Authenticate with Qwen (OAuth)"
     interactive: true
     allocate_tty: true
 
   whoami:
-    script: scripts/whoami.sh
+    script: /opt/tfgrid-ai-stack/scripts/whoami.sh
     description: "Check Qwen authentication status"
 
   status:
     description: "Show system status"
-    script: scripts/status.sh
+    script: /opt/tfgrid-ai-stack/scripts/status.sh
 
   backup:
-    script: scripts/manual-backup.sh
+    script: /opt/tfgrid-ai-stack/scripts/manual-backup.sh
     description: "Trigger manual backup"
 
   restore:
-    script: scripts/restore-backup.sh
+    script: /opt/tfgrid-ai-stack/scripts/restore-backup.sh
     description: "Restore from backup"
     args: "[backup-file]"
 
