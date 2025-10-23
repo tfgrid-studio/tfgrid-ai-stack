@@ -249,6 +249,44 @@ sudo -u gitea /usr/local/bin/gitea admin user create \
     --config /etc/gitea/app.ini \
     || echo "⚠️ Admin user may already exist"
 
+# Generate Gitea API token for automation
+echo "🔑 Generating Gitea API token..."
+GITEA_TOKEN=$(sudo -u gitea /usr/local/bin/gitea admin user generate-access-token \
+    --username gitadmin \
+    --token-name "ai-agent-automation" \
+    --scopes "write:repository,write:organization,write:user" \
+    --config /etc/gitea/app.ini | grep "Access token" | awk '{print $NF}')
+
+# Store token in config file
+mkdir -p /opt/tfgrid-ai-stack/config
+cat > /opt/tfgrid-ai-stack/config/gitea.json << EOF
+{
+  "gitea_url": "http://localhost:3000",
+  "api_token": "$GITEA_TOKEN",
+  "default_org": "tfgrid-ai-agent",
+  "admin_user": "gitadmin"
+}
+EOF
+
+chmod 600 /opt/tfgrid-ai-stack/config/gitea.json
+chown developer:developer /opt/tfgrid-ai-stack/config/gitea.json
+
+echo "✅ Gitea API token generated and stored"
+
+# Create default organization
+echo "🏢 Creating default organization..."
+curl -X POST "http://localhost:3000/api/v1/orgs" \
+  -H "Authorization: token $GITEA_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "tfgrid-ai-agent",
+    "full_name": "TFGrid AI Agent Projects",
+    "description": "AI-generated projects and repositories",
+    "visibility": "public"
+  }' 2>/dev/null || echo "⚠️ Organization may already exist"
+
+echo "✅ Default organization ready"
+
 # Restart Gitea to apply configuration changes
 echo "🔄 Restarting Gitea to apply configuration..."
 systemctl restart gitea
@@ -696,7 +734,7 @@ echo ""
 echo "⚠️  IMPORTANT: Change the admin password after first login!"
 echo ""
 echo "📚 Next steps:"
-echo "   1. Authenticate with Qwen: tfgrid-compose cmd login"
-echo "   2. Create a project: tfgrid-compose cmd create"
-echo "   3. Open Gitea: http://${PRIMARY_IP:-localhost}/git/"
-echo "   4. Start building with AI assistance!"
+echo "   1. Authenticate with Qwen: tfgrid-compose login"
+echo "   2. Create a project: tfgrid-compose create"
+echo "   3. Check Gitea: http://${PRIMARY_IP:-localhost}/git/tfgrid-ai-agent/"
+echo "   4. Watch AI push code automatically!"

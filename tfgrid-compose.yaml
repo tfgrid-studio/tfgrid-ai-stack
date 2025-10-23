@@ -210,6 +210,12 @@ commands:
     script: /opt/tfgrid-ai-stack/scripts/whoami.sh
     description: "Check Qwen authentication status"
 
+  set-gitea:
+    script: /opt/tfgrid-ai-stack/scripts/set-gitea.sh
+    description: "Configure Gitea organization for AI projects"
+    args: "[organization-name]"
+    interactive: true
+
   status:
     description: "Show system status"
     script: /opt/tfgrid-ai-stack/scripts/status.sh
@@ -237,7 +243,7 @@ tags:
   - git
   - automation
   - monitoring
-  - multi-vm
+  - single-vm
 
 # Metadata
 metadata:

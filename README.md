@@ -4,13 +4,13 @@ AI-powered development platform with integrated Git hosting and deployment.
 
 ## Overview
 
-TFGrid AI Stack is an app that deploys a complete AI-powered development platform using the gateway pattern. It automatically deploys and configures three components:
+TFGrid AI Stack is an app that deploys a complete AI-powered development platform on a single VM. It automatically installs and configures three integrated components:
 
-- **Gateway VM**: Public API gateway with nginx routing, SSL termination, and monitoring
-- **AI Agent VM**: AI-powered project creation and code generation (deployed as tfgrid-ai-agent)
-- **Gitea VM**: Git repository hosting with web interface (deployed as tfgrid-gitea)
+- **Nginx Reverse Proxy**: Public API gateway with routing, SSL termination, and monitoring
+- **AI Agent Service**: AI-powered project creation and code generation (Node.js API)
+- **Gitea Git Server**: Git repository hosting with web interface
 
-All components are connected via private networking and accessible through clean URLs on a single domain.
+All components run on the same VM and are accessible through clean URLs on a single domain.
 
 ## Quick Start
 
@@ -35,10 +35,10 @@ tfgrid-compose up tfgrid-ai-stack
 ```
 Internet
     ↓
-[Gateway VM] ← nginx routing, SSL, monitoring
-    ↓ (WireGuard VPN)
-├── [AI Agent VM] ← tfgrid-ai-agent app
-└── [Gitea VM] ← tfgrid-gitea app
+[Single VM]
+├── Nginx Reverse Proxy ← routing, SSL, monitoring
+├── AI Agent Service ← project creation & code generation
+└── Gitea Git Server ← repository hosting & web interface
 ```
 
 ### URL Structure
@@ -101,9 +101,7 @@ The pattern supports extensive customization through variables:
 - `ssl_email`: Email for SSL certificate (required if domain set)
 
 ### Resource Allocation
-- `gateway_cpu/memory/disk`: Gateway VM resources
-- `ai_agent_cpu/memory/disk`: AI Agent VM resources
-- `gitea_cpu/memory/disk`: Gitea VM resources
+- `vm_cpu/memory/disk`: Single VM resources (all services co-located)
 
 ### Security & Limits
 - `api_rate_limit`: API rate limiting
@@ -130,9 +128,9 @@ The pattern supports extensive customization through variables:
 
 ```
 tfgrid-ai-stack/
-├── tfgrid-compose.yaml    # App definition (uses gateway pattern)
+├── tfgrid-compose.yaml    # App definition (single-vm pattern)
 ├── deployment/            # Component orchestration hooks
-│   ├── setup.sh          # Deploy ai-agent + gitea components
+│   ├── setup.sh          # Install all components on single VM
 │   ├── configure.sh      # Configure nginx routing
 │   └── healthcheck.sh    # Verify component health
 ├── scripts/              # AI project management scripts
@@ -142,10 +140,10 @@ tfgrid-ai-stack/
 
 ## Development
 
-This app is maintained by TFGrid Studio. It orchestrates the deployment of:
-- [tfgrid-ai-agent](https://github.com/tfgrid-studio/tfgrid-ai-agent) - AI coding assistant
-- [tfgrid-gitea](https://github.com/tfgrid-studio/tfgrid-gitea) - Git hosting
-- Gateway pattern from [tfgrid-compose](https://github.com/tfgrid-studio/tfgrid-compose) - Infrastructure
+This app is maintained by TFGrid Studio. It integrates components from:
+- [tfgrid-ai-agent](https://github.com/tfgrid-studio/tfgrid-ai-agent) - AI coding assistant logic
+- [tfgrid-gitea](https://github.com/tfgrid-studio/tfgrid-gitea) - Git hosting setup
+- Single-VM pattern from [tfgrid-compose](https://github.com/tfgrid-studio/tfgrid-compose) - Infrastructure
 
 ## Documentation
 

@@ -86,6 +86,15 @@ while true; do
         else
             git commit -m "Agent: Automated update at $(date)" >> "$LOG_FILE" 2>&1
             echo "$(date): Changes committed successfully" >> "$LOG_FILE"
+
+            # Push to Gitea if remote configured
+            if git remote get-url origin >/dev/null 2>&1; then
+                if git push origin main >> "$LOG_FILE" 2>&1; then
+                    echo "$(date): ✅ Pushed to Gitea" >> "$LOG_FILE"
+                else
+                    echo "$(date): ⚠️ Push to Gitea failed, continuing" >> "$LOG_FILE"
+                fi
+            fi
         fi
     else
         # On error, log and continue

@@ -545,10 +545,68 @@ Project initialized and ready to begin.
 See \`.agent/TODO.md\` for the agent's tracking file.
 EOF
 
+# Gitea Integration
+echo "🌐 Setting up Gitea repository..."
+
+CONFIG_FILE="/opt/tfgrid-ai-stack/config/gitea.json"
+if [ -f "$CONFIG_FILE" ]; then
+    GITEA_URL=$(jq -r '.gitea_url' "$CONFIG_FILE")
+    API_TOKEN=$(jq -r '.api_token' "$CONFIG_FILE")
+    DEFAULT_ORG=$(jq -r '.default_org' "$CONFIG_FILE")
+
+    # Create repository in Gitea
+    echo "  Creating repo in organization: $DEFAULT_ORG"
+    REPO_RESPONSE=$(curl -s -X POST "$GITEA_URL/api/v1/orgs/$DEFAULT_ORG/repos" \
+        -H "Authorization: token $API_TOKEN" \
+        -H "Content-Type: application/json" \
+        -d "{
+            \"name\": \"$PROJECT_NAME\",
+            \"description\": \"AI-generated project: $PROJECT_NAME\",
+            \"private\": false,
+            \"auto_init\": false
+        }")
+
+    if echo "$REPO_RESPONSE" | jq -e '.id' >/dev/null 2>&1; then
+        REPO_URL="$GITEA_URL/$DEFAULT_ORG/$PROJECT_NAME.git"
+        echo "  ✅ Repository created: $REPO_URL"
+
+        # Add Gitea as remote
+        git remote add origin "$REPO_URL"
+
+        # Configure credentials (using token)
+        git config credential.helper store
+        echo "http://gitadmin:$API_TOKEN@localhost:3000" > ~/.git-credentials
+
+        # Store repo info in project
+        mkdir -p .agent
+        cat > .agent/gitea.json << EOF
+{
+    "repo_url": "$REPO_URL",
+    "web_url": "$GITEA_URL/$DEFAULT_ORG/$PROJECT_NAME",
+    "organization": "$DEFAULT_ORG",
+    "created": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+}
+EOF
+
+        echo "  ✅ Git remote configured"
+    else
+        echo "  ⚠️ Could not create Gitea repository"
+        echo "  Projects will still work locally"
+    fi
+else
+    echo "  ⚠️ Gitea not configured, skipping remote setup"
+fi
+
 # Initialize git repository
 echo "🔧 Initializing git repository..."
 git add .
 git commit -m "Initial commit: Project '$PROJECT_NAME' created with AI-Agent"
+
+# Push to Gitea if remote configured
+if git remote get-url origin >/dev/null 2>&1; then
+    echo "🔄 Pushing to Gitea..."
+    git push -u origin main 2>/dev/null && echo "  ✅ Pushed to Gitea" || echo "  ⚠️ Push failed"
+fi
 
 # Fix ownership if running as root (ensure developer user can access everything)
 if [ "$USER" = "root" ] || [ "$EUID" -eq 0 ]; then
