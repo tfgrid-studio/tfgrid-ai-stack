@@ -68,38 +68,17 @@ chown -R gitea:gitea /etc/gitea /var/lib/gitea /var/log/gitea
 mkdir -p /opt/tfgrid-ai-stack/scripts/gitea
 mkdir -p /opt/tfgrid-ai-stack/scripts/ai-agent
 
-# Copy scripts to appropriate directories (tfgrid-compose flattens src/ directory)
-# Gitea scripts
+# Copy scripts to appropriate directories (tfgrid-compose flattens src/ directory to scripts/)
+# All scripts are currently in src/scripts/ and get flattened to scripts/ by tfgrid-compose
+
+# Gitea scripts (only launch.sh and status.sh are currently in tfgrid-ai-stack)
 cp /tmp/app-source/launch.sh /opt/tfgrid-ai-stack/scripts/gitea/ 2>/dev/null || echo "ℹ️  No gitea launch script"
-cp /tmp/app-source/create-repo.sh /opt/tfgrid-ai-stack/scripts/gitea/ 2>/dev/null || echo "ℹ️  No gitea create-repo script"
-cp /tmp/app-source/create-user.sh /opt/tfgrid-ai-stack/scripts/gitea/ 2>/dev/null || echo "ℹ️  No gitea create-user script"
-cp /tmp/app-source/init-admin.sh /opt/tfgrid-ai-stack/scripts/gitea/ 2>/dev/null || echo "ℹ️  No gitea init-admin script"
-cp /tmp/app-source/list-repos.sh /opt/tfgrid-ai-stack/scripts/gitea/ 2>/dev/null || echo "ℹ️  No gitea list-repos script"
 cp /tmp/app-source/status.sh /opt/tfgrid-ai-stack/scripts/gitea/ 2>/dev/null || echo "ℹ️  No gitea status script"
 
-# AI Agent scripts
-cp /tmp/app-source/agent-init.sh /opt/tfgrid-ai-stack/scripts/ai-agent/ 2>/dev/null || echo "ℹ️  No ai-agent agent-init script"
-cp /tmp/app-source/agent-loop.sh /opt/tfgrid-ai-stack/scripts/ai-agent/ 2>/dev/null || echo "ℹ️  No ai-agent agent-loop script"
-cp /tmp/app-source/agent-loop-advanced.sh /opt/tfgrid-ai-stack/scripts/ai-agent/ 2>/dev/null || echo "ℹ️  No ai-agent agent-loop-advanced script"
-cp /tmp/app-source/common-project.sh /opt/tfgrid-ai-stack/scripts/ai-agent/ 2>/dev/null || echo "ℹ️  No ai-agent common-project script"
-cp /tmp/app-source/create-project.sh /opt/tfgrid-ai-stack/scripts/ai-agent/ 2>/dev/null || echo "ℹ️  No ai-agent create-project script"
-cp /tmp/app-source/edit-project.sh /opt/tfgrid-ai-stack/scripts/ai-agent/ 2>/dev/null || echo "ℹ️  No ai-agent edit-project script"
-cp /tmp/app-source/interactive-wrapper.sh /opt/tfgrid-ai-stack/scripts/ai-agent/ 2>/dev/null || echo "ℹ️  No ai-agent interactive-wrapper script"
-cp /tmp/app-source/list-projects.sh /opt/tfgrid-ai-stack/scripts/ai-agent/ 2>/dev/null || echo "ℹ️  No ai-agent list-projects script"
-cp /tmp/app-source/logs-project.sh /opt/tfgrid-ai-stack/scripts/ai-agent/ 2>/dev/null || echo "ℹ️  No ai-agent logs-project script"
-cp /tmp/app-source/monitor-project.sh /opt/tfgrid-ai-stack/scripts/ai-agent/ 2>/dev/null || echo "ℹ️  No ai-agent monitor-project script"
-cp /tmp/app-source/remove-project.sh /opt/tfgrid-ai-stack/scripts/ai-agent/ 2>/dev/null || echo "ℹ️  No ai-agent remove-project script"
-cp /tmp/app-source/restart-project.sh /opt/tfgrid-ai-stack/scripts/ai-agent/ 2>/dev/null || echo "ℹ️  No ai-agent restart-project script"
-cp /tmp/app-source/run-project.sh /opt/tfgrid-ai-stack/scripts/ai-agent/ 2>/dev/null || echo "ℹ️  No ai-agent run-project script"
-cp /tmp/app-source/select-project.sh /opt/tfgrid-ai-stack/scripts/ai-agent/ 2>/dev/null || echo "ℹ️  No ai-agent select-project script"
-cp /tmp/app-source/select-project-command.sh /opt/tfgrid-ai-stack/scripts/ai-agent/ 2>/dev/null || echo "ℹ️  No ai-agent select-project-command script"
-cp /tmp/app-source/status-projects.sh /opt/tfgrid-ai-stack/scripts/ai-agent/ 2>/dev/null || echo "ℹ️  No ai-agent status-projects script"
-cp /tmp/app-source/stop-project.sh /opt/tfgrid-ai-stack/scripts/ai-agent/ 2>/dev/null || echo "ℹ️  No ai-agent stop-project script"
-cp /tmp/app-source/stopall-projects.sh /opt/tfgrid-ai-stack/scripts/ai-agent/ 2>/dev/null || echo "ℹ️  No ai-agent stopall-projects script"
-cp /tmp/app-source/summary-project.sh /opt/tfgrid-ai-stack/scripts/ai-agent/ 2>/dev/null || echo "ℹ️  No ai-agent summary-project script"
-cp /tmp/app-source/test-setup.sh /opt/tfgrid-ai-stack/scripts/ai-agent/ 2>/dev/null || echo "ℹ️  No ai-agent test-setup script"
-cp /tmp/app-source/whoami.sh /opt/tfgrid-ai-stack/scripts/ai-agent/ 2>/dev/null || echo "ℹ️  No ai-agent whoami script"
-cp /tmp/app-source/login.sh /opt/tfgrid-ai-stack/scripts/ai-agent/ 2>/dev/null || echo "ℹ️  No ai-agent login script"
+# AI Agent scripts (all the rest)
+for script in agent-init.sh agent-loop.sh agent-loop-advanced.sh common-project.sh create-project.sh edit-project.sh interactive-wrapper.sh list-projects.sh logs-project.sh monitor-project.sh remove-project.sh restart-project.sh run-project.sh select-project.sh select-project-command.sh status-projects.sh stop-project.sh stopall-projects.sh summary-project.sh test-setup.sh whoami.sh login.sh; do
+    cp "/tmp/app-source/$script" /opt/tfgrid-ai-stack/scripts/ai-agent/ 2>/dev/null || echo "ℹ️  No ai-agent $script script"
+done
 
 # Make all scripts executable
 chmod +x /opt/tfgrid-ai-stack/scripts/gitea/*.sh 2>/dev/null || true
