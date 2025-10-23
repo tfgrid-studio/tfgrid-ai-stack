@@ -68,8 +68,12 @@ chown -R gitea:gitea /etc/gitea /var/lib/gitea /var/log/gitea
 mkdir -p /opt/tfgrid-ai-stack/scripts/gitea
 mkdir -p /opt/tfgrid-ai-stack/scripts/ai-agent
 
-# Copy scripts to appropriate directories (tfgrid-compose flattens src/ directory to scripts/)
-# All scripts are currently in src/scripts/ and get flattened to scripts/ by tfgrid-compose
+# Copy scripts to appropriate directories and create symlinks for tfgrid-compose compatibility
+# tfgrid-compose flattens src/scripts/ to scripts/ in deployment directory
+
+# Create organized directories
+mkdir -p /opt/tfgrid-ai-stack/scripts/gitea
+mkdir -p /opt/tfgrid-ai-stack/scripts/ai-agent
 
 # Gitea scripts (only launch.sh and status.sh are currently in tfgrid-ai-stack)
 cp /tmp/app-source/launch.sh /opt/tfgrid-ai-stack/scripts/gitea/ 2>/dev/null || echo "ℹ️  No gitea launch script"
@@ -78,6 +82,17 @@ cp /tmp/app-source/status.sh /opt/tfgrid-ai-stack/scripts/gitea/ 2>/dev/null || 
 # AI Agent scripts (all the rest)
 for script in agent-init.sh agent-loop.sh agent-loop-advanced.sh common-project.sh create-project.sh edit-project.sh interactive-wrapper.sh list-projects.sh logs-project.sh monitor-project.sh remove-project.sh restart-project.sh run-project.sh select-project.sh select-project-command.sh status-projects.sh stop-project.sh stopall-projects.sh summary-project.sh test-setup.sh whoami.sh login.sh; do
     cp "/tmp/app-source/$script" /opt/tfgrid-ai-stack/scripts/ai-agent/ 2>/dev/null || echo "ℹ️  No ai-agent $script script"
+done
+
+# Create symlinks in deployment directory for tfgrid-compose compatibility
+# tfgrid-compose executes from the deployment directory, so we need symlinks there
+ln -sf /opt/tfgrid-ai-stack/scripts/gitea/launch.sh scripts/gitea/ 2>/dev/null || mkdir -p scripts/gitea && ln -sf /opt/tfgrid-ai-stack/scripts/gitea/launch.sh scripts/gitea/
+ln -sf /opt/tfgrid-ai-stack/scripts/gitea/status.sh scripts/gitea/ 2>/dev/null || ln -sf /opt/tfgrid-ai-stack/scripts/gitea/status.sh scripts/gitea/
+
+# Create ai-agent symlinks
+mkdir -p scripts/ai-agent
+for script in agent-init.sh agent-loop.sh agent-loop-advanced.sh common-project.sh create-project.sh edit-project.sh interactive-wrapper.sh list-projects.sh logs-project.sh monitor-project.sh remove-project.sh restart-project.sh run-project.sh select-project.sh select-project-command.sh status-projects.sh stop-project.sh stopall-projects.sh summary-project.sh test-setup.sh whoami.sh login.sh; do
+    ln -sf "/opt/tfgrid-ai-stack/scripts/ai-agent/$script" "scripts/ai-agent/" 2>/dev/null || true
 done
 
 # Make all scripts executable
