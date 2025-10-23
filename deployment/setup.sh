@@ -35,6 +35,105 @@ ufw --force enable
 
 echo "✅ Docker and dependencies installed"
 
+# Install AI Agent dependencies (like tfgrid-ai-agent)
+echo "🤖 Installing AI Agent dependencies..."
+
+# Install Node.js 20
+echo "📦 Installing Node.js 20..."
+curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+apt-get install -y nodejs
+
+# Install expect for OAuth automation
+echo "📦 Installing expect..."
+apt-get install -y expect
+
+# Install jq for JSON parsing
+echo "📦 Installing jq..."
+apt-get install -y jq
+
+# Install at for async service management
+echo "📦 Installing at..."
+apt-get install -y at
+systemctl enable atd
+systemctl start atd
+
+# Install qwen-cli
+echo "📦 Installing qwen-cli..."
+npm install -g @qwen-code/qwen-code
+
+# Create developer user if it doesn't exist
+echo "👤 Creating developer user..."
+if ! id -u developer >/dev/null 2>&1; then
+    useradd -m -s /bin/bash developer
+    echo "✅ Created developer user"
+else
+    echo "ℹ️  Developer user already exists"
+fi
+
+# Add developer to sudo group (optional, for admin tasks)
+usermod -aG sudo developer 2>/dev/null || true
+
+# Configure git identity from tfgrid-compose credentials
+echo "🔧 Configuring git identity..."
+if [ -n "$TFGRID_GIT_NAME" ] && [ -n "$TFGRID_GIT_EMAIL" ]; then
+    echo "  Using credentials from tfgrid-compose login"
+    GIT_NAME="$TFGRID_GIT_NAME"
+    GIT_EMAIL="$TFGRID_GIT_EMAIL"
+    echo "  Name:  $GIT_NAME"
+    echo "  Email: $GIT_EMAIL"
+else
+    echo "  No git credentials provided - using defaults"
+    echo "  (Run 'tfgrid-compose login' to add your git identity)"
+    GIT_NAME="AI Agent"
+    GIT_EMAIL="agent@localhost"
+fi
+
+# Create workspace directories as developer
+echo "📁 Creating workspace..."
+su - developer <<EOF
+mkdir -p ~/code/tfgrid-ai-stack-projects
+mkdir -p ~/code/github.com
+mkdir -p ~/code/git.ourworld.tf
+mkdir -p ~/code/gitlab.com
+mkdir -p ~/.ssh
+chmod 700 ~/.ssh
+
+# Configure git with user's identity
+git config --global user.name "$GIT_NAME"
+git config --global user.email "$GIT_EMAIL"
+git config --global init.defaultBranch main
+
+echo "✅ Workspace created at ~/code"
+echo "✅ Git configured: $GIT_NAME <$GIT_EMAIL>"
+EOF
+
+# Create tfgrid-ai-stack directories (system-level for management scripts)
+echo "📁 Creating tfgrid-ai-stack directories..."
+mkdir -p /opt/tfgrid-ai-stack/{scripts,templates,logs}
+
+# Copy scripts and templates from app source
+echo "📋 Copying scripts and templates..."
+cp -r /tmp/app-source/scripts /opt/tfgrid-ai-stack/
+cp -r /tmp/app-source/templates /opt/tfgrid-ai-stack/
+
+# Make scripts executable
+chmod +x /opt/tfgrid-ai-stack/scripts/*.sh
+
+# Set proper ownership
+chown -R developer:developer /opt/tfgrid-ai-stack
+chmod -R 755 /opt/tfgrid-ai-stack/scripts
+
+# Create log directory
+mkdir -p /var/log/ai-agent
+chown developer:developer /var/log/ai-agent
+
+# Fix workspace permissions and copy qwen credentials
+echo "🔧 Setting up workspace permissions..."
+chown -R developer:developer /home/developer/code
+cp -r /home/developer/.qwen /root/ 2>/dev/null || echo "ℹ️  Qwen credentials not yet available (will be set up during login)"
+
+echo "✅ AI Agent dependencies installed"
+
 # Install Gitea
 echo "📦 Installing Gitea..."
 # Install system dependencies
@@ -63,16 +162,6 @@ echo "  Gitea installed"
 # Create directories
 mkdir -p /etc/gitea /var/lib/gitea/data /var/log/gitea
 chown -R gitea:gitea /etc/gitea /var/lib/gitea /var/log/gitea
-
-# Copy scripts from app source directory (where tfgrid-compose places them)
-# tfgrid-compose copies src/* to /tmp/app-source/
-# This matches the pattern used by tfgrid-ai-agent and tfgrid-gitea
-
-# Copy scripts directory from app source
-cp -r /tmp/app-source/scripts /opt/tfgrid-ai-stack/
-
-# Make scripts executable
-chmod +x /opt/tfgrid-ai-stack/scripts/*.sh
 
 # Create Gitea configuration for auto-setup
 echo "⚙️ Creating Gitea configuration..."
@@ -499,19 +588,24 @@ systemctl start ai-agent
 
 echo "✅ AI Agent installed and started as systemd service"
 
-# Create systemd service template for AI agent projects
-echo "🔧 Creating AI agent project systemd service template..."
-cat > /etc/systemd/system/tfgrid-ai-project@.service << 'PROJECTSERVICEEOF'
+# Install systemd template service for per-project management
+echo "🔧 Installing systemd template service..."
+if [ -f /tmp/app-source/systemd/tfgrid-ai-project@.service ]; then
+    cp /tmp/app-source/systemd/tfgrid-ai-project@.service /etc/systemd/system/
+    systemctl daemon-reload
+    echo "✅ Systemd template service installed"
+else
+    echo "⚠️  Systemd template service not found, creating inline..."
+    cat > /etc/systemd/system/tfgrid-ai-project@.service << 'PROJECTSERVICEEOF'
 [Unit]
 Description=TFGrid AI Project %i
-After=network.target ai-agent.service
-Requires=ai-agent.service
+After=network.target
 
 [Service]
 Type=simple
 User=developer
-WorkingDirectory=/home/developer/code/tfgrid-ai-agent-projects/%i
-ExecStart=/opt/tfgrid-ai-stack/scripts/ai-agent/agent-loop.sh %i
+WorkingDirectory=/home/developer/code/tfgrid-ai-stack-projects/%i
+ExecStart=/opt/tfgrid-ai-stack/scripts/agent-loop.sh %i
 Restart=always
 RestartSec=10
 Environment=PROJECT_WORKSPACE=/home/developer/code
@@ -520,9 +614,9 @@ Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 [Install]
 WantedBy=multi-user.target
 PROJECTSERVICEEOF
-
-systemctl daemon-reload
-echo "✅ AI agent project service template created"
+    systemctl daemon-reload
+    echo "✅ Systemd template service created"
+fi
 
 # Configure Nginx reverse proxy
 echo "🌐 Configuring Nginx reverse proxy..."
@@ -595,10 +689,14 @@ echo "   • Username: gitadmin"
 echo "   • Password: changeme123"
 echo "   • Email: admin@localhost"
 echo ""
+echo "👤 Developer user ready: /home/developer"
+echo "📁 Workspace: /home/developer/code"
+echo "🔧 Systemd template: tfgrid-ai-project@.service (per-project instances)"
+echo ""
 echo "⚠️  IMPORTANT: Change the admin password after first login!"
 echo ""
 echo "📚 Next steps:"
-echo "   • Open http://${PRIMARY_IP:-localhost}/git/ in your browser"
-echo "   • Log in with gitadmin/changeme123"
-echo "   • Create your first repository"
-echo "   • Start building with AI assistance!"
+echo "   1. Authenticate with Qwen: tfgrid-compose cmd login"
+echo "   2. Create a project: tfgrid-compose cmd create"
+echo "   3. Open Gitea: http://${PRIMARY_IP:-localhost}/git/"
+echo "   4. Start building with AI assistance!"
