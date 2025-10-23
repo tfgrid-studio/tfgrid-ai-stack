@@ -575,7 +575,11 @@ if [ -f "$CONFIG_FILE" ]; then
 
         # Configure credentials (using token)
         git config credential.helper store
+        # Store credentials in the correct format for Git
         echo "http://gitadmin:$API_TOKEN@$GITEA_URL" | sed 's|http://||' > ~/.git-credentials
+        # Also set up credential helper for this specific remote
+        git config --global credential.http://localhost:3000.username gitadmin
+        git config --global credential.http://localhost:3000.helper store
 
         # Store repo info in project
         mkdir -p .agent
