@@ -16,6 +16,10 @@ cd "$PROJECT_DIR" || {
     exit 1
 }
 
+# Ensure Git credentials are available (systemd services may not have full environment)
+export HOME=/home/developer
+export GIT_CONFIG_GLOBAL=/home/developer/.gitconfig
+
 echo "Starting AI Agent Loop..."
 echo "Working directory: $(pwd)"
 echo "Starting at: $(date)"
