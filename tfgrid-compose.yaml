@@ -14,6 +14,12 @@ hooks:
   configure: deployment/configure.sh
   healthcheck: deployment/healthcheck.sh
 
+# Hook configuration
+hook_config:
+  configure:
+    optional: true
+    description: "SSL and domain configuration (skipped for private deployments)"
+
 # Single-VM pattern variables
 variables:
   domain:
