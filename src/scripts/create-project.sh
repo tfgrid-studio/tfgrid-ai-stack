@@ -619,7 +619,8 @@ git commit -m "Initial commit: Project '$PROJECT_NAME' created with AI-Agent"
 # Push to Gitea if remote configured
 if git remote get-url origin >/dev/null 2>&1; then
     echo "🔄 Pushing to Gitea..."
-    git push -u origin main 2>/dev/null && echo "  ✅ Pushed to Gitea" || echo "  ⚠️ Push failed"
+    # Use GIT_ASKPASS to avoid interactive prompts
+    GIT_ASKPASS=/bin/echo git push -u origin main 2>/dev/null && echo "  ✅ Pushed to Gitea" || echo "  ⚠️ Push failed"
 fi
 
 # Fix ownership if running as root (ensure developer user can access everything)

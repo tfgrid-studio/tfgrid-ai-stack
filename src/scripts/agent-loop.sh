@@ -93,8 +93,8 @@ while true; do
 
             # Push to Gitea if remote configured
             if git remote get-url origin >/dev/null 2>&1; then
-                # Use git credential helper to avoid interactive prompts
-                if git push origin main >> "$LOG_FILE" 2>&1; then
+                # Use GIT_ASKPASS to avoid interactive prompts
+                if GIT_ASKPASS=/bin/echo git push origin main >> "$LOG_FILE" 2>&1; then
                     echo "$(date): ✅ Pushed to Gitea" >> "$LOG_FILE"
                 else
                     echo "$(date): ⚠️ Push to Gitea failed, continuing" >> "$LOG_FILE"
