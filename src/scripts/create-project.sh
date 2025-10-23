@@ -554,6 +554,8 @@ git commit -m "Initial commit: Project '$PROJECT_NAME' created with AI-Agent"
 if [ "$USER" = "root" ] || [ "$EUID" -eq 0 ]; then
     echo "🔧 Setting proper ownership..."
     chown -R developer:developer "$PROJECTS_DIR/$PROJECT_NAME"
+    # Add safe directory exception for git
+    su - developer -c "git config --global --add safe.directory '$PROJECTS_DIR/$PROJECT_NAME'" 2>/dev/null || true
 fi
 
 # Reload systemd daemon to pick up new service template instance
