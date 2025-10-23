@@ -64,25 +64,15 @@ echo "  Gitea installed"
 mkdir -p /etc/gitea /var/lib/gitea/data /var/log/gitea
 chown -R gitea:gitea /etc/gitea /var/lib/gitea /var/log/gitea
 
-# Create organized scripts directory structure
-mkdir -p /opt/tfgrid-ai-stack/scripts/gitea
-mkdir -p /opt/tfgrid-ai-stack/scripts/ai-agent
+# Copy scripts from app source directory (where tfgrid-compose places them)
+# tfgrid-compose copies src/* to /tmp/app-source/
+# This matches the pattern used by tfgrid-ai-agent and tfgrid-gitea
 
-# Copy scripts to the installation directory for tfgrid-compose absolute path references
-# tfgrid-compose flattens src/scripts/ to scripts/ in deployment directory, but commands expect absolute paths
+# Copy scripts directory from app source
+cp -r /tmp/app-source/scripts /opt/tfgrid-ai-stack/
 
-# Create installation directory
-mkdir -p /opt/tfgrid-ai-stack/scripts
-
-# Copy all scripts from deployment scripts/ to installation directory
-cp -r scripts/* /opt/tfgrid-ai-stack/scripts/ 2>/dev/null || echo "ℹ️  No scripts to copy from deployment directory"
-
-# Make all scripts executable
-chmod +x /opt/tfgrid-ai-stack/scripts/*.sh 2>/dev/null || true
-
-# Make all scripts executable
-chmod +x /opt/tfgrid-ai-stack/scripts/gitea/*.sh 2>/dev/null || true
-chmod +x /opt/tfgrid-ai-stack/scripts/ai-agent/*.sh 2>/dev/null || true
+# Make scripts executable
+chmod +x /opt/tfgrid-ai-stack/scripts/*.sh
 
 # Create Gitea configuration for auto-setup
 echo "⚙️ Creating Gitea configuration..."
