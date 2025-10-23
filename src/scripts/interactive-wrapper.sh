@@ -55,7 +55,7 @@ statuses=()
 
 # Determine workspace base directory
 WORKSPACE_BASE="${PROJECT_WORKSPACE:-/home/developer/code}"
-PROJECTS_DIR="$WORKSPACE_BASE/tfgrid-ai-agent-projects"
+PROJECTS_DIR="$WORKSPACE_BASE/tfgrid-ai-stack-projects"
 
 # Get list of running projects from systemd
 RUNNING_SERVICES=$(systemctl list-units 'tfgrid-ai-project@*.service' --no-legend --no-pager 2>/dev/null | \

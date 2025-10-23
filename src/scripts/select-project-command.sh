@@ -8,7 +8,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/common-project.sh"
 
-PROJECTS_DIR="/home/developer/code/tfgrid-ai-agent-projects"
+PROJECTS_DIR="/home/developer/code/tfgrid-ai-stack-projects"
 
 # Allow direct selection via argument
 DIRECT_SELECT="$1"

@@ -6,27 +6,37 @@ set -e
 
 echo "🚀 Launching tfgrid-ai-stack web interface..."
 
-# Get deployment info from environment or tfgrid-compose
+# Get IP from argument, environment, or try to detect
+DETECTED_IP="${1:-}"
+
+# Try environment variables first
 if [ -n "${PRIMARY_IP:-}" ]; then
-    WIREGUARD_URL="http://${PRIMARY_IP}/git/"
+    DETECTED_IP="${PRIMARY_IP}"
 elif [ -n "${TFGRID_WIREGUARD_IP:-}" ]; then
-    WIREGUARD_URL="http://${TFGRID_WIREGUARD_IP}/git/"
+    DETECTED_IP="${TFGRID_WIREGUARD_IP}"
 fi
+
+# Try to detect from SSH connection if running on VM
+if [ -z "$DETECTED_IP" ] && [ -n "${SSH_CONNECTION:-}" ]; then
+    # Extract client IP from SSH_CONNECTION (format: client_ip client_port server_ip server_port)
+    DETECTED_IP=$(echo $SSH_CONNECTION | awk '{print $3}')
+fi
+
+# Fallback to localhost if still not found
+if [ -z "$DETECTED_IP" ]; then
+    echo "ℹ️  No IP provided, using localhost"
+    DETECTED_IP="localhost"
+fi
+
+# Build URLs
+WIREGUARD_URL="http://${DETECTED_IP}/git/"
 
 if [ -n "${TFGRID_MYCELIUM_IP:-}" ]; then
     MYCELIUM_URL="http://[${TFGRID_MYCELIUM_IP}]/git/"
 fi
 
-# Prefer WireGuard URL, fallback to Mycelium
-if [ -n "${WIREGUARD_URL:-}" ]; then
-    APP_URL="$WIREGUARD_URL"
-elif [ -n "${MYCELIUM_URL:-}" ]; then
-    APP_URL="$MYCELIUM_URL"
-else
-    echo "❌ Could not determine application URL"
-    echo "   Make sure you're running this from tfgrid-compose"
-    exit 1
-fi
+# Use primary URL
+APP_URL="$WIREGUARD_URL"
 
 echo "🌐 Opening: $APP_URL"
 echo ""

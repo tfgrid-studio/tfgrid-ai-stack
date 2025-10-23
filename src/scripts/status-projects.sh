@@ -3,7 +3,7 @@
 
 set -e
 
-PROJECTS_DIR="/home/developer/code/tfgrid-ai-agent-projects"
+PROJECTS_DIR="/home/developer/code/tfgrid-ai-stack-projects"
 
 echo "📊 AI Agent Projects Status"
 echo "=============================="

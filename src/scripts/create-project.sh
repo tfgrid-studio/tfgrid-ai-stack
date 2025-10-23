@@ -76,8 +76,8 @@ fi
 # Determine workspace base directory
 WORKSPACE_BASE="${PROJECT_WORKSPACE:-/home/developer/code}"
 
-# Use tfgrid-ai-agent-projects directory for all AI agent projects
-PROJECTS_DIR="$WORKSPACE_BASE/tfgrid-ai-agent-projects"
+# Use tfgrid-ai-stack-projects directory for all AI agent projects
+PROJECTS_DIR="$WORKSPACE_BASE/tfgrid-ai-stack-projects"
 
 # Note: Git config for this context should be set via:
 # tfgrid-compose git-config --context=tfgrid-ai-agent

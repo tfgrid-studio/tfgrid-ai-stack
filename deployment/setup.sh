@@ -288,7 +288,7 @@ const app = express();
 app.use(express.json());
 
 // Project workspace
-const PROJECTS_DIR = '/opt/ai-agent/projects';
+const PROJECTS_DIR = '/home/developer/code/tfgrid-ai-stack-projects';
 
 // Ensure projects directory exists
 fs.mkdir(PROJECTS_DIR, { recursive: true }).catch(console.error);
@@ -432,7 +432,7 @@ app.post('/api/projects/:name/run', async (req, res) => {
     await updateProjectStatus(name, 'running');
 
     // Start agent loop in background
-    const scriptPath = '/opt/tfgrid-ai-stack/scripts/ai-agent/agent-loop.sh';
+    const scriptPath = '/opt/tfgrid-ai-stack/scripts/agent-loop.sh';
     const child = spawn('bash', [scriptPath, name], {
       cwd: projectPath,
       detached: true,
@@ -553,7 +553,7 @@ function runCommand(cmd, args, options = {}) {
 app.listen(8080, () => {
   console.log('AI Agent API server listening on port 8080');
   console.log('Projects directory:', PROJECTS_DIR);
-  console.log('Scripts directory:', '/opt/tfgrid-ai-stack/scripts/ai-agent');
+  console.log('Scripts directory:', '/opt/tfgrid-ai-stack/scripts');
 });
 JSEOF
 
