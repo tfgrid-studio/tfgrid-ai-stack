@@ -40,12 +40,15 @@ spawn qwen
 expect {
     "How would you like to authenticate" {
         send "1\r"
-        expect {
-            "authorize" {
-                # Keep session alive until killed
-                expect timeout
-            }
-        }
+        exp_continue
+    }
+    "authorize" {
+        # Keep session alive until killed
+        expect timeout
+    }
+    timeout {
+        # Keep session alive until killed
+        expect timeout
     }
 }
 END_EXPECT
@@ -56,7 +59,7 @@ su - developer -c 'bash /tmp/qwen-auth.sh' &
 
 # Wait for OAuth URL to appear
 echo "Starting OAuth flow..."
-sleep 8
+sleep 12
 
 # Display the OAuth output (static, no flickering)
 echo ""
@@ -75,6 +78,9 @@ if su - developer -c 'test -f /tmp/qwen_oauth.log' 2>/dev/null; then
         # Show full log if URL extraction failed
         echo "DEBUG: Searching for authorize URL in log:"
         su - developer -c 'cat /tmp/qwen_oauth.log 2>/dev/null | grep -i authorize | head -20'
+        echo ""
+        echo "If no URL appears above, try running the login again."
+        echo "The OAuth URL should look like: https://chat.qwen.ai/authorize?user_code=XXXXX&client=qwen-code"
     fi
 else
     echo "⚠️  Log file not created. Checking if expect is installed..."
