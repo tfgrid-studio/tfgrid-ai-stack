@@ -575,8 +575,8 @@ if [ -f "$CONFIG_FILE" ]; then
 
         # Configure credentials for both root (current user) and developer user
         git config credential.helper store
-        # Store credentials in the correct format for Git
-        echo "http://gitadmin:$API_TOKEN@$GITEA_URL" | sed 's|http://||' > ~/.git-credentials
+        # Store credentials in the correct format for Git (full URL with credentials)
+        echo "http://gitadmin:$API_TOKEN@localhost:3000" > ~/.git-credentials
         # Also set up credential helper for this specific remote
         git config --global credential.http://localhost:3000.username gitadmin
         git config --global credential.http://localhost:3000.helper store
@@ -586,7 +586,7 @@ if [ -f "$CONFIG_FILE" ]; then
             su - developer -c "git config --global credential.helper store"
             su - developer -c "git config --global credential.http://localhost:3000.username gitadmin"
             su - developer -c "git config --global credential.http://localhost:3000.helper store"
-            echo "http://gitadmin:$API_TOKEN@$GITEA_URL" | sed 's|http://||' > /home/developer/.git-credentials
+            echo "http://gitadmin:$API_TOKEN@localhost:3000" > /home/developer/.git-credentials
             chown developer:developer /home/developer/.git-credentials
             chmod 600 /home/developer/.git-credentials
         fi
