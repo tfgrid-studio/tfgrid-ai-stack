@@ -1,0 +1,31 @@
+[Unit]
+Description=TFGrid AI Stack Hosting API
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=developer
+Group=developer
+WorkingDirectory=/home/developer/code/tfgrid-ai-stack/src/agent
+ExecStart=/usr/bin/node hosting-api.js
+Restart=always
+RestartSec=5
+Environment=NODE_ENV=production
+Environment=HOSTING_API_PORT=8081
+Environment=PROJECT_WORKSPACE=/home/developer/code
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/home/developer/code /etc/tfgrid-ai-stack
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=tfgrid-ai-hosting-api
+
+[Install]
+WantedBy=multi-user.target

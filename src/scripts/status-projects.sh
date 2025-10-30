@@ -1,9 +1,14 @@
 #!/bin/bash
 # status-projects.sh - Show status of all AI agent projects via systemd
+# Enhanced with gateway hosting information
 
 set -e
 
 PROJECTS_DIR="/home/developer/code/tfgrid-ai-stack-projects"
+
+# Source hosting functions for enhanced status
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/hosting-project.sh" 2>/dev/null || true
 
 echo "📊 AI Agent Projects Status"
 echo "=============================="
@@ -62,15 +67,40 @@ for PROJECT in "${ALL_PROJECTS[@]}"; do
         LAST_COMMIT="no commits"
     fi
     
+    # Get hosting information
+    local org_name=$(get_project_org "$PROJECT_PATH" 2>/dev/null || echo "default")
+    local project_type=$(detect_project_type "$PROJECT_PATH" 2>/dev/null || echo "unknown")
+    local hosting_status=""
+    local hosting_icon=""
+    
+    if [ -d "$PROJECT_PATH/.hosting" ]; then
+        hosting_status="🌐 Hosted"
+        hosting_icon="✅"
+    else
+        hosting_status="📂 Git only"
+        hosting_icon="⭕"
+    fi
+    
     # Print project info
     echo "📁 $PROJECT"
-    echo "   $STATUS"
+    echo "   $STATUS $hosting_icon"
     if [ "$PID" != "-" ]; then
         echo "   🆔 PID: $PID"
         echo "   🕒 Started: $STARTED"
     fi
+    echo "   🏢 Org: $org_name"
+    echo "   🔧 Type: $project_type"
+    echo "   🌐 Hosting: $hosting_status"
     echo "   ⏱️  Time limit: $TIME_CONSTRAINT"
     echo "   📝 Last commit: $LAST_COMMIT"
+    
+    # Show URLs if hosted
+    if [ -d "$PROJECT_PATH/.hosting" ]; then
+        local server_ip=$(hostname -I | cut -d' ' -f1)
+        echo "   🔗 URLs:"
+        echo "      Git: http://$server_ip/git/$org_name/$PROJECT"
+        echo "      Web: http://$server_ip/web/$org_name/$PROJECT"
+    fi
     echo ""
 done
 
@@ -79,3 +109,7 @@ echo "  🚀 Start: tfgrid-compose run <project-name>"
 echo "  🛑 Stop: tfgrid-compose stop <project-name>"
 echo "  📊 Monitor: tfgrid-compose monitor <project-name>"
 echo "  📝 Logs: tfgrid-compose logs <project-name>"
+echo "  🌐 Hosting:"
+echo "     📤 Publish: t publish <project-name>"
+echo "     📥 Unpublish: t unpublish <project-name>"
+echo "     📊 Status: t status <project-name>"
