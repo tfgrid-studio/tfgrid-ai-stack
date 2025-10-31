@@ -213,14 +213,76 @@ build_project() {
     return 0
 }
 
+# Function to get available projects from AI Agent API
+get_available_projects() {
+    local api_response
+    
+    echo "Fetching available projects..."
+    api_response=$(curl -s http://localhost:8080/api/projects 2>/dev/null || echo "")
+    
+    if [ -z "$api_response" ] || echo "$api_response" | grep -q '"error"'; then
+        echo "No projects found or AI Agent not responding"
+        return 1
+    fi
+    
+    # Parse JSON response to extract project names
+    echo "$api_response" | grep -o '"name":"[^"]*"' | sed 's/"name":"//;s/"$//'
+}
+
+# Function for interactive project selection
+interactive_select_project() {
+    echo ""
+    echo "📁 Select a project to publish:"
+    echo ""
+    
+    # Get available projects
+    mapfile -t projects < <(get_available_projects)
+    
+    if [ ${#projects[@]} -eq 0 ]; then
+        echo "No projects available to publish"
+        echo ""
+        echo "Create a project: tfgrid-compose create"
+        return 1
+    fi
+    
+    # List projects with numbers
+    local i=1
+    for project in "${projects[@]}"; do
+        echo "  $i) $project"
+        ((i++))
+    done
+    
+    echo ""
+    read -p "Enter number [1-${#projects[@]}] or 'q' to quit: " choice
+    
+    if [[ "$choice" == "q" ]] || [[ "$choice" == "Q" ]]; then
+        return 1
+    fi
+    
+    if ! [[ "$choice" =~ ^[0-9]+$ ]] || [ "$choice" -lt 1 ] || [ "$choice" -gt ${#projects[@]} ]; then
+        echo "❌ Invalid selection"
+        return 1
+    fi
+    
+    selected_project="${projects[$((choice-1))]}"
+    echo "$selected_project"
+    return 0
+}
+
 # Function to publish a project
 publish_project() {
     local project_name="$1"
     
     if [ -z "$project_name" ]; then
-        echo "❌ Error: Project name is required"
-        echo "Usage: t publish <project-name>"
-        return 1
+        # Interactive mode - prompt for project selection
+        project_name=$(interactive_select_project)
+        if [ $? -ne 0 ]; then
+            return 1
+        fi
+        echo ""
+        echo "📤 Selected project: $project_name"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
     fi
     
     log "INFO" "Starting publish process for project: $project_name"
@@ -376,15 +438,16 @@ case "${1:-}" in
     *)
         echo "Gateway Hosting Management"
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo "Usage: t <command> <project-name>"
+        echo "Usage: t <command> [project-name]"
         echo ""
         echo "Commands:"
-        echo "  publish <name>    - Publish project for web hosting"
-        echo "  unpublish <name>  - Remove project from web hosting"
-        echo "  status <name>     - Show hosting status"
+        echo "  publish [name]     - Publish project for web hosting (interactive if no name)"
+        echo "  unpublish <name>   - Remove project from web hosting"
+        echo "  status <name>      - Show hosting status"
         echo ""
         echo "Examples:"
-        echo "  t publish mathweb"
+        echo "  t publish          - Interactive mode (prompts for project)"
+        echo "  t publish mathweb  - Non-interactive mode"
         echo "  t unpublish mathweb"
         echo "  t status mathweb"
         ;;
