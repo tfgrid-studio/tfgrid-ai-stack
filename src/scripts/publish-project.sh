@@ -1,308 +1,42 @@
 #!/bin/bash
-# publish-project.sh - Publish projects for web hosting
-# Implements the gateway hosting functionality
+# publish-project.sh - AI-powered project publishing
+# Calls Qwen AI agent to intelligently publish projects for web hosting
 
 set -e
 
-# Source hosting functions
+# Source common functions
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/common-project.sh"
 source "$SCRIPT_DIR/hosting-project.sh"
 
-# Configuration
-PROJECTS_DIR="${PROJECT_WORKSPACE:-/home/developer/code}/tfgrid-ai-stack-projects"
-HOSTING_CONFIG_DIR="/etc/tfgrid-ai-stack/hosting"
-PROJECT_HOSTING_CONFIG_DIR="/etc/tfgrid-ai-stack/projects"
-NGINX_CONFIG_FILE="/etc/nginx/sites-available/ai-stack"
-BACKUP_DIR="/tmp/ai-stack-nginx-backup"
+PROJECT_NAME="$1"
 
-# Function to log messages
-log() {
-    local level="$1"
-    shift
-    local message="$*"
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [$level] $message"
-}
-
-# Function to backup nginx configuration
-backup_nginx_config() {
-    log "INFO" "Backing up nginx configuration..."
-    sudo mkdir -p "$BACKUP_DIR"
-    sudo cp "$NGINX_CONFIG_FILE" "$BACKUP_DIR/ai-stack-backup-$(date +%s).conf"
-    log "INFO" "Nginx configuration backed up"
-}
-
-# Function to restore nginx configuration from backup
-restore_nginx_config() {
-    local latest_backup=$(ls -t "$BACKUP_DIR"/ai-stack-backup-*.conf 2>/dev/null | head -1)
-    
-    if [ -n "$latest_backup" ] && [ -f "$latest_backup" ]; then
-        log "ERROR" "Restoring nginx configuration from backup..."
-        sudo cp "$latest_backup" "$NGINX_CONFIG_FILE"
-        sudo nginx -t && sudo systemctl reload nginx
-        log "INFO" "Nginx configuration restored"
-        return 0
-    else
-        log "ERROR" "No backup found to restore"
-        return 1
-    fi
-}
-
-# Function to find the actual web root directory
-find_web_root() {
-    local project_path="$1"
-    
-    # Check common locations for index.html
-    if [ -f "$project_path/index.html" ]; then
-        echo "$project_path/"
-    elif [ -f "$project_path/src/index.html" ]; then
-        echo "$project_path/src/"
-    elif [ -f "$project_path/public/index.html" ]; then
-        echo "$project_path/public/"
-    elif [ -f "$project_path/dist/index.html" ]; then
-        echo "$project_path/dist/"
-    elif [ -f "$project_path/build/index.html" ]; then
-        echo "$project_path/build/"
-    else
-        # Default to project root with trailing slash
-        echo "$project_path/"
-    fi
-}
-
-# Function to generate nginx location config for a project
-generate_nginx_location() {
-    local org_name="$1"
-    local project_name="$2"
-    local project_type="$3"
-    local project_path="$4"
-    
-    # Find the actual web root (with trailing slash)
-    local web_root=$(find_web_root "$project_path")
-    
-    case "$project_type" in
-        "react"|"vue"|"nextjs"|"nuxt")
-            echo "    # $project_name hosting - ${project_type} application"
-            echo "    location ~ ^/web/$org_name/$project_name/(.*)$ {"
-            echo "        alias ${web_root}\$1;"
-            echo "        try_files \$uri \$uri/ /web/$org_name/$project_name/index.html;"
-            echo ""
-            echo "        # Cache static assets"
-            echo "        location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {"
-            echo "            expires 1y;"
-            echo "            add_header Cache-Control \"public, immutable\";"
-            echo "        }"
-            echo "    }"
-            ;;
-        "static"|"built-static")
-            echo "    # $project_name hosting - static site"
-            echo "    location ~ ^/web/$org_name/$project_name/(.*)$ {"
-            echo "        alias ${web_root}\$1;"
-            echo "        try_files \$uri \$uri/ /web/$org_name/$project_name/index.html;"
-            echo ""
-            echo "        # Cache static files"
-            echo "        location ~* \.(html|htm|css|js|png|jpg|jpeg|gif|ico|svg)$ {"
-            echo "            expires 1h;"
-            echo "        }"
-            echo "    }"
-            ;;
-        "api")
-            echo "    # $project_name hosting - API server"
-            echo "    location ~ ^/web/$org_name/$project_name/ {"
-            echo "        proxy_pass http://localhost:3000/;"
-            echo "        proxy_set_header Host \$host;"
-            echo "        proxy_set_header X-Real-IP \$remote_addr;"
-            echo "        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;"
-            echo "        proxy_set_header X-Forwarded-Proto \$scheme;"
-            echo "        proxy_buffering off;"
-            echo "    }"
-            ;;
-        "buildable")
-            echo "    # $project_name hosting - buildable project"
-            echo "    location ~ ^/web/$org_name/$project_name/(.*)$ {"
-            echo "        alias ${web_root}\$1;"
-            echo "        try_files \$uri \$uri/ /web/$org_name/$project_name/index.html;"
-            echo "    }"
-            ;;
-        *)
-            echo "    # $project_name hosting - fallback configuration"
-            echo "    location ~ ^/web/$org_name/$project_name/(.*)$ {"
-            echo "        alias ${web_root}\$1;"
-            echo "        try_files \$uri \$uri/ /web/$org_name/$project_name/index.html;"
-            echo "    }"
-            ;;
-    esac
-}
-
-# Function to update nginx configuration with new project
-update_nginx_config() {
-    local org_name="$1"
-    local project_name="$2"
-    local project_type="$3"
-    local project_path="$4"
-    
-    log "INFO" "Updating nginx configuration..."
-    
-    # Ensure nginx config directory exists
-    ensure_hosting_directories
-    
-    # Generate the location block
-    local location_config=$(generate_nginx_location "$org_name" "$project_name" "$project_type" "$project_path")
-    
-    # Create project-specific config file
-    local config_file="$PROJECT_HOSTING_CONFIG_DIR/$org_name-$project_name.conf"
-    echo "$location_config" | sudo tee "$config_file" > /dev/null
-    
-    # Backup current nginx config
-    backup_nginx_config
-    
-    # Check if wildcard include is in the main nginx config
-    local wildcard_include="include $PROJECT_HOSTING_CONFIG_DIR/*.conf;"
-    
-    if ! grep -q "include.*$PROJECT_HOSTING_CONFIG_DIR/\*.conf" "$NGINX_CONFIG_FILE"; then
-        log "INFO" "Adding wildcard include for project configs..."
-        
-        # Add the include statement before the last closing brace of the server block
-        # Find the last } in the file (server block closing)
-        sudo sed -i '$i\    # Include all project hosting configs' "$NGINX_CONFIG_FILE"
-        sudo sed -i "\$i\\    $wildcard_include" "$NGINX_CONFIG_FILE"
-        sudo sed -i '$i\ ' "$NGINX_CONFIG_FILE"
-        
-        log "INFO" "Added wildcard include statement"
-    fi
-    
-    # Test nginx configuration
-    if sudo nginx -t; then
-        log "INFO" "Nginx configuration test passed"
-        sudo systemctl reload nginx
-        log "INFO" "Nginx reloaded successfully"
-    else
-        log "ERROR" "Nginx configuration test failed, restoring backup"
-        restore_nginx_config
-        return 1
-    fi
-    
-    log "INFO" "Nginx configuration updated successfully"
-    return 0
-}
-
-# Function to set permissions for nginx access
-set_nginx_permissions() {
-    local project_path="$1"
-    
-    log "INFO" "Setting permissions for nginx access..."
-    
-    # Get the web root directory
-    local web_root=$(find_web_root "$project_path")
-    
-    # Ensure parent directories are accessible by nginx group
-    # Set 750 (rwxr-x---) for directories - owner and group can access
-    chmod 750 "$project_path" 2>/dev/null || true
-    
-    # If web root is a subdirectory, set its permissions too
-    if [ "$web_root" != "$project_path/" ]; then
-        local web_dir=$(dirname "$web_root")
-        chmod 750 "$web_dir" 2>/dev/null || true
-    fi
-    
-    # Set 640 (rw-r-----) for files - owner can write, group can read
-    find "$project_path" -type f -exec chmod 640 {} \; 2>/dev/null || true
-    
-    # Ensure directory permissions for all subdirectories
-    find "$project_path" -type d -exec chmod 750 {} \; 2>/dev/null || true
-    
-    log "INFO" "Permissions set successfully"
-    return 0
-}
-
-# Function to build project if needed
-build_project() {
-    local project_path="$1"
-    local project_type="$2"
-    
-    log "INFO" "Building project (type: $project_type)..."
-    
-    case "$project_type" in
-        "react"|"vue"|"nextjs"|"nuxt")
-            if [ -f "$project_path/package.json" ]; then
-                cd "$project_path"
-                
-                # Check if node_modules exists
-                if [ ! -d "$project_path/node_modules" ]; then
-                    log "INFO" "Installing dependencies..."
-                    npm install
-                fi
-                
-                # Build the project
-                log "INFO" "Running build command..."
-                if npm run build; then
-                    log "INFO" "Build completed successfully"
-                    echo "success" > "$project_path/.hosting/build-status"
-                else
-                    log "ERROR" "Build failed"
-                    echo "failed" > "$project_path/.hosting/build-status"
-                    return 1
-                fi
-            else
-                log "WARNING" "No package.json found, skipping build"
-            fi
-            ;;
-        "static"|"built-static")
-            log "INFO" "Static site - no build needed"
-            echo "static" > "$project_path/.hosting/build-status"
-            ;;
-        "api")
-            log "INFO" "API project - manual server startup required"
-            echo "api" > "$project_path/.hosting/build-status"
-            ;;
-        *)
-            log "INFO" "Unknown project type - no build performed"
-            echo "manual" > "$project_path/.hosting/build-status"
-            ;;
-    esac
-    
-    return 0
-}
-
-# Function to get available projects from AI Agent API
-get_available_projects() {
-    local api_response
-    
-    echo "Fetching available projects..." >&2
-    api_response=$(curl -s http://localhost:8080/api/projects 2>/dev/null || echo "")
-    
-    if [ -z "$api_response" ] || echo "$api_response" | grep -q '"error"'; then
-        echo "No projects found or AI Agent not responding" >&2
-        return 1
-    fi
-    
-    # Parse JSON response to extract project names
-    echo "$api_response" | grep -o '"name":"[^"]*"' | sed 's/"name":"//;s/"$//'
-}
-
-# Function for interactive project selection
-interactive_select_project() {
-    echo "" >&2
-    echo "📁 Select a project to publish:" >&2
-    echo "" >&2
+# If no argument, interactive mode
+if [ -z "$PROJECT_NAME" ]; then
+    # Interactive mode - prompt for project selection
+    echo "📁 Select a project to publish:"
+    echo ""
     
     # Get available projects
-    mapfile -t projects < <(get_available_projects)
+    mapfile -t projects < <(list_projects_brief)
     
     if [ ${#projects[@]} -eq 0 ]; then
-        echo "No projects available to publish" >&2
-        echo "" >&2
-        echo "Create a project: tfgrid-compose create" >&2
+        echo "No projects available to publish"
+        echo ""
+        echo "Create a project: tfgrid-compose create"
         return 1
     fi
     
     # List projects with numbers
     local i=1
     for project in "${projects[@]}"; do
-        echo "  $i) $project" >&2
+        # Remove the "- " prefix
+        project_name=$(echo "$project" | sed 's/^- //')
+        echo "  $i) $project_name"
         ((i++))
     done
     
-    echo "" >&2
+    echo ""
     read -p "Enter number [1-${#projects[@]}] or 'q' to quit: " choice
     
     if [[ "$choice" == "q" ]] || [[ "$choice" == "Q" ]]; then
@@ -310,200 +44,135 @@ interactive_select_project() {
     fi
     
     if ! [[ "$choice" =~ ^[0-9]+$ ]] || [ "$choice" -lt 1 ] || [ "$choice" -gt ${#projects[@]} ]; then
-        echo "❌ Invalid selection" >&2
+        echo "❌ Invalid selection"
         return 1
     fi
     
-    selected_project="${projects[$((choice-1))]}"
-    echo "$selected_project"
-    return 0
-}
+    # Get selected project name (remove the "- " prefix)
+    PROJECT_NAME=$(echo "${projects[$((choice-1))]}" | sed 's/^- //')
+fi
 
-# Function to publish a project
-publish_project() {
-    local project_name="$1"
-    
-    if [ -z "$project_name" ]; then
-        # Interactive mode - prompt for project selection
-        project_name=$(interactive_select_project)
-        if [ $? -ne 0 ]; then
-            return 1
-        fi
-        echo ""
-        echo "📤 Selected project: $project_name"
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo ""
-    fi
-    
-    log "INFO" "Starting publish process for project: $project_name"
-    
-    # Validate project exists
-    local project_path=$(find_project_path "$project_name")
-    if [ -z "$project_path" ]; then
-        log "ERROR" "Project '$project_name' not found"
-        return 1
-    fi
-    
-    log "INFO" "Project found at: $project_path"
-    
-    # Get project information
-    local org_name=$(get_project_org "$project_path")
-    local project_type=$(detect_project_type "$project_path")
-    
-    log "INFO" "Organization: $org_name"
-    log "INFO" "Project type: $project_type"
-    
-    # Check if project is hostable
-    if ! is_project_hostable "$project_path"; then
-        log "ERROR" "Project is not hostable"
-        return 1
-    fi
-    
-    # Create hosting directory
-    mkdir -p "$project_path/.hosting"
-    
-    # Build project if needed
-    if ! build_project "$project_path" "$project_type"; then
-        log "ERROR" "Project build failed"
-        return 1
-    fi
-    
-    # Update nginx configuration
-    if ! update_nginx_config "$org_name" "$project_name" "$project_type" "$project_path"; then
-        log "ERROR" "Failed to update nginx configuration"
-        return 1
-    fi
-    
-    # Set permissions for nginx access
-    if ! set_nginx_permissions "$project_path"; then
-        log "WARNING" "Failed to set some permissions, but continuing..."
-    fi
-    
-    # Record publish time
-    echo "$(date)" > "$project_path/.hosting/published-at"
-    
-    # Success!
-    local server_ip=$(hostname -I | cut -d' ' -f1)
-    
-    echo ""
-    echo "🎉 Project published successfully!"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "📂 Project: $project_name"
-    echo "🏢 Organization: $org_name"
-    echo "🔧 Type: $project_type"
-    echo "📅 Published: $(date)"
-    echo ""
-    echo "🌐 Access URLs:"
-    echo "   Git: http://$server_ip/git/$org_name/$project_name"
-    echo "   Web: http://$server_ip/web/$org_name/$project_name"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    
-    return 0
-}
+echo "🤖 AI-Powered Project Publisher"
+echo "=================================="
+echo ""
 
-# Function to unpublish a project
-unpublish_project() {
-    local project_name="$1"
-    
-    if [ -z "$project_name" ]; then
-        echo "❌ Error: Project name is required"
-        echo "Usage: t unpublish <project-name>"
-        return 1
-    fi
-    
-    log "INFO" "Starting unpublish process for project: $project_name"
-    
-    # Validate project exists
-    local project_path=$(find_project_path "$project_name")
-    if [ -z "$project_path" ]; then
-        log "ERROR" "Project '$project_name' not found"
-        return 1
-    fi
-    
-    # Get project information
-    local org_name=$(get_project_org "$project_path")
-    local config_file="$PROJECT_HOSTING_CONFIG_DIR/$org_name-$project_name.conf"
-    
-    # Check if project is actually hosted
-    if [ ! -f "$config_file" ]; then
-        log "WARNING" "Project '$project_name' is not currently hosted"
-        return 1
-    fi
-    
-    # Backup nginx config
-    backup_nginx_config
-    
-    # Remove project config file
-    sudo rm -f "$config_file"
-    log "INFO" "Removed project configuration file"
-    
-    # Remove include statement from nginx config
-    local include_statement="include $config_file;"
-    if grep -q "$include_statement" "$NGINX_CONFIG_FILE"; then
-        sudo sed -i "/$include_statement/d" "$NGINX_CONFIG_FILE"
-        log "INFO" "Removed nginx include statement"
-    fi
-    
-    # Test and reload nginx
-    if sudo nginx -t; then
-        sudo systemctl reload nginx
-        log "INFO" "Nginx reloaded successfully"
-    else
-        log "ERROR" "Nginx configuration test failed, restoring backup"
-        restore_nginx_config
-        return 1
-    fi
-    
-    # Remove hosting metadata
-    rm -rf "$project_path/.hosting"
-    
+# Check authentication FIRST
+echo "🔍 Checking Qwen authentication..."
+if ! su - developer -c 'test -f ~/.qwen/settings.json' 2>/dev/null; then
     echo ""
-    echo "🗑️  Project unpublished successfully!"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "📂 Project: $project_name"
-    echo "🏢 Organization: $org_name"
-    echo "📅 Unpublished: $(date)"
+    echo "⚠️  Qwen is not authenticated!"
     echo ""
-    echo "🔗 Git access still available:"
-    echo "   http://$(hostname -I | cut -d' ' -f1)/git/$org_name/$project_name"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    
-    return 0
-}
+    echo "Please authenticate first by running:"
+    echo "  tfgrid-compose login"
+    echo ""
+    exit 1
+fi
 
-# Main script logic
-case "${1:-}" in
-    "publish")
-        shift
-        publish_project "$@"
-        ;;
-    "unpublish")
-        shift
-        unpublish_project "$@"
-        ;;
-    "status")
-        shift
-        if [ -n "$1" ]; then
-            get_project_hosting_status "$1"
-        else
-            echo "❌ Error: Project name required"
-            echo "Usage: t hosting status <project-name>"
-        fi
-        ;;
-    *)
-        echo "Gateway Hosting Management"
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo "Usage: t <command> [project-name]"
-        echo ""
-        echo "Commands:"
-        echo "  publish [name]     - Publish project for web hosting (interactive if no name)"
-        echo "  unpublish <name>   - Remove project from web hosting"
-        echo "  status <name>      - Show hosting status"
-        echo ""
-        echo "Examples:"
-        echo "  t publish          - Interactive mode (prompts for project)"
-        echo "  t publish mathweb  - Non-interactive mode"
-        echo "  t unpublish mathweb"
-        echo "  t status mathweb"
-        ;;
-esac
+echo "✅ Qwen authenticated"
+echo ""
+
+# Find project in workspace
+PROJECT_PATH=$(find_project_path "$PROJECT_NAME")
+
+if [ -z "$PROJECT_PATH" ]; then
+    echo "❌ Error: Project '$PROJECT_NAME' not found"
+    echo ""
+    echo "Available projects:"
+    list_projects_brief
+    exit 1
+fi
+
+echo "📂 Project: $PROJECT_NAME"
+echo "📁 Location: $PROJECT_PATH"
+echo ""
+
+# Get project organization (from git remote)
+ORG_NAME=$(get_project_org "$PROJECT_PATH")
+echo "🏢 Organization: $ORG_NAME"
+
+# Check if project is hostable
+if ! is_project_hostable "$PROJECT_PATH"; then
+    echo "❌ Project is not hostable"
+    exit 1
+fi
+
+echo "✅ Project is hostable"
+echo ""
+
+# Create AI agent context for publishing
+cd "$PROJECT_PATH"
+
+# Create publishing prompt for AI agent
+cat > .agent/publish-prompt.md << EOF
+# AI Agent Publishing Task
+
+You are tasked with intelligently publishing this project for web hosting.
+
+## Project Information
+- **Project Name**: $PROJECT_NAME
+- **Project Path**: $PROJECT_PATH
+- **Organization**: $ORG_NAME
+- **Project Type**: $(detect_project_type "$PROJECT_PATH")
+
+## Your Mission
+1. **Analyze the project structure** and determine optimal hosting configuration
+2. **Detect the correct organization** from the project's Git remote URL
+3. **Set up web hosting** by creating proper nginx configuration
+4. **Ensure proper file permissions** for web access
+5. **Create deployment URLs** for both Git and web access
+
+## Specific Requirements
+- **Organization**: Use "$ORG_NAME" (not "default")
+- **Git URL**: http://10.1.3.2/git/$ORG_NAME/$PROJECT_NAME
+- **Web URL**: http://10.1.3.2/web/$ORG_NAME/$PROJECT_NAME
+- **Project Type**: $(detect_project_type "$PROJECT_PATH")
+- **Hosting Method**: Nginx reverse proxy configuration
+
+## Actions to Perform
+1. Create or update nginx configuration for this project
+2. Ensure nginx includes the project config
+3. Test nginx configuration
+4. Reload nginx if configuration is valid
+5. Set proper file permissions for web access
+6. Verify web hosting setup
+
+## Context Files
+- Use any existing project files in this directory
+- Check .git/config for remote URL if needed
+- Use nginx configuration templates if available
+
+## Expected Output
+Provide a clear summary of:
+- What nginx configuration was created/updated
+- The final URLs where the project is hosted
+- Any permissions or issues that needed fixing
+- Confirmation that web hosting is working
+
+Begin the intelligent publishing process now.
+EOF
+
+# Start AI agent publishing process
+echo "🚀 Starting AI agent publishing process..."
+echo ""
+echo "The AI agent will:"
+echo "  1. Analyze project structure and organization"
+echo "  2. Create intelligent nginx configuration" 
+echo "  3. Set up proper web hosting"
+echo "  4. Verify deployment success"
+echo ""
+
+# Call the AI agent to handle publishing directly
+# We call qwen with the publish prompt for intelligent publishing
+echo "🧠 Calling Qwen AI for intelligent publishing..."
+echo ""
+
+# Execute Qwen AI with the publish context
+su - developer -c "cd '$PROJECT_PATH' && qwen-code --approval-mode yolo --sandbox false --iterations 1 --prompt '.agent/publish-prompt.md'"
+
+echo ""
+echo "🎉 AI Agent publishing process completed!"
+echo ""
+echo "🌐 Your project should now be accessible at:"
+echo "   Git:  http://10.1.3.2/git/$ORG_NAME/$PROJECT_NAME"
+echo "   Web:  http://10.1.3.2/web/$ORG_NAME/$PROJECT_NAME"
+echo ""
