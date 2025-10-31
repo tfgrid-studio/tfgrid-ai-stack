@@ -120,19 +120,23 @@ get_project_org() {
         local git_url=$(cd "$project_path" && git remote get-url origin 2>/dev/null || echo "")
         
         if [ -n "$git_url" ]; then
-            # Extract org from Git URL
-            if [[ "$git_url" =~ github\.com[:/]([^/]+)/ ]]; then
+            # Extract org from Git URL patterns
+            # Pattern 1: http://server/git/org/repo or http://server:port/git/org/repo
+            if [[ "$git_url" =~ /git/([^/]+)/[^/]+$ ]]; then
                 echo "${BASH_REMATCH[1]}"
                 return 0
+            # Pattern 2: GitHub HTTPS - https://github.com/org/repo
+            elif [[ "$git_url" =~ github\.com[:/]([^/]+)/ ]]; then
+                echo "${BASH_REMATCH[1]}"
+                return 0
+            # Pattern 3: GitHub SSH - git@github.com:org/repo
             elif [[ "$git_url" =~ git@github\.com:([^/]+)/ ]]; then
                 echo "${BASH_REMATCH[1]}"
                 return 0
-            elif [[ "$git_url" =~ gitea\. ]]; then
-                # Extract from Gitea URL: http://server/git/org/repo
-                if [[ "$git_url" =~ /git/([^/]+)/ ]]; then
-                    echo "${BASH_REMATCH[1]}"
-                    return 0
-                fi
+            # Pattern 4: Generic git URL - extract second-to-last path component
+            elif [[ "$git_url" =~ /([^/]+)/[^/]+\.git$ ]]; then
+                echo "${BASH_REMATCH[1]}"
+                return 0
             fi
         fi
     fi

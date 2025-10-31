@@ -82,8 +82,8 @@ generate_nginx_location() {
     case "$project_type" in
         "react"|"vue"|"nextjs"|"nuxt")
             echo "    # $project_name hosting - ${project_type} application"
-            echo "    location ~ ^/web/$org_name/$project_name/ {"
-            echo "        alias $web_root;"
+            echo "    location ~ ^/web/$org_name/$project_name/(.*)$ {"
+            echo "        alias ${web_root}\$1;"
             echo "        try_files \$uri \$uri/ /web/$org_name/$project_name/index.html;"
             echo ""
             echo "        # Cache static assets"
@@ -95,9 +95,9 @@ generate_nginx_location() {
             ;;
         "static"|"built-static")
             echo "    # $project_name hosting - static site"
-            echo "    location ~ ^/web/$org_name/$project_name/ {"
-            echo "        alias $web_root;"
-            echo "        index index.html;"
+            echo "    location ~ ^/web/$org_name/$project_name/(.*)$ {"
+            echo "        alias ${web_root}\$1;"
+            echo "        try_files \$uri \$uri/ /web/$org_name/$project_name/index.html;"
             echo ""
             echo "        # Cache static files"
             echo "        location ~* \.(html|htm|css|js|png|jpg|jpeg|gif|ico|svg)$ {"
@@ -118,16 +118,16 @@ generate_nginx_location() {
             ;;
         "buildable")
             echo "    # $project_name hosting - buildable project"
-            echo "    location ~ ^/web/$org_name/$project_name/ {"
-            echo "        alias $web_root;"
+            echo "    location ~ ^/web/$org_name/$project_name/(.*)$ {"
+            echo "        alias ${web_root}\$1;"
             echo "        try_files \$uri \$uri/ /web/$org_name/$project_name/index.html;"
             echo "    }"
             ;;
         *)
             echo "    # $project_name hosting - fallback configuration"
-            echo "    location ~ ^/web/$org_name/$project_name/ {"
-            echo "        alias $web_root;"
-            echo "        index index.html;"
+            echo "    location ~ ^/web/$org_name/$project_name/(.*)$ {"
+            echo "        alias ${web_root}\$1;"
+            echo "        try_files \$uri \$uri/ /web/$org_name/$project_name/index.html;"
             echo "    }"
             ;;
     esac
