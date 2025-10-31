@@ -48,6 +48,27 @@ restore_nginx_config() {
     fi
 }
 
+# Function to find the actual web root directory
+find_web_root() {
+    local project_path="$1"
+    
+    # Check common locations for index.html
+    if [ -f "$project_path/index.html" ]; then
+        echo "$project_path/"
+    elif [ -f "$project_path/src/index.html" ]; then
+        echo "$project_path/src/"
+    elif [ -f "$project_path/public/index.html" ]; then
+        echo "$project_path/public/"
+    elif [ -f "$project_path/dist/index.html" ]; then
+        echo "$project_path/dist/"
+    elif [ -f "$project_path/build/index.html" ]; then
+        echo "$project_path/build/"
+    else
+        # Default to project root with trailing slash
+        echo "$project_path/"
+    fi
+}
+
 # Function to generate nginx location config for a project
 generate_nginx_location() {
     local org_name="$1"
@@ -55,11 +76,14 @@ generate_nginx_location() {
     local project_type="$3"
     local project_path="$4"
     
+    # Find the actual web root (with trailing slash)
+    local web_root=$(find_web_root "$project_path")
+    
     case "$project_type" in
         "react"|"vue"|"nextjs"|"nuxt")
             echo "    # $project_name hosting - ${project_type} application"
             echo "    location ~ ^/web/$org_name/$project_name/ {"
-            echo "        alias $project_path;"
+            echo "        alias $web_root;"
             echo "        try_files \$uri \$uri/ /web/$org_name/$project_name/index.html;"
             echo ""
             echo "        # Cache static assets"
@@ -72,7 +96,7 @@ generate_nginx_location() {
         "static"|"built-static")
             echo "    # $project_name hosting - static site"
             echo "    location ~ ^/web/$org_name/$project_name/ {"
-            echo "        alias $project_path;"
+            echo "        alias $web_root;"
             echo "        index index.html;"
             echo ""
             echo "        # Cache static files"
@@ -95,14 +119,14 @@ generate_nginx_location() {
         "buildable")
             echo "    # $project_name hosting - buildable project"
             echo "    location ~ ^/web/$org_name/$project_name/ {"
-            echo "        alias $project_path;"
+            echo "        alias $web_root;"
             echo "        try_files \$uri \$uri/ /web/$org_name/$project_name/index.html;"
             echo "    }"
             ;;
         *)
             echo "    # $project_name hosting - fallback configuration"
             echo "    location ~ ^/web/$org_name/$project_name/ {"
-            echo "        alias $project_path;"
+            echo "        alias $web_root;"
             echo "        index index.html;"
             echo "    }"
             ;;
@@ -131,22 +155,19 @@ update_nginx_config() {
     # Backup current nginx config
     backup_nginx_config
     
-    # Check if project config is already included in ai-stack config
-    local include_statement="include $config_file;"
+    # Check if wildcard include is in the main nginx config
+    local wildcard_include="include $PROJECT_HOSTING_CONFIG_DIR/*.conf;"
     
-    if ! grep -q "$include_statement" "$NGINX_CONFIG_FILE"; then
-        # Add include statement to the server block
-        # Find the location of the existing project routing and add our config after it
-        local insertion_point=$(grep -n "EXISTING PROJECT ROUTING" "$NGINX_CONFIG_FILE" | cut -d: -f1)
+    if ! grep -q "include.*$PROJECT_HOSTING_CONFIG_DIR/\*.conf" "$NGINX_CONFIG_FILE"; then
+        log "INFO" "Adding wildcard include for project configs..."
         
-        if [ -n "$insertion_point" ]; then
-            # Insert after the existing project routing
-            local line_after_insertion=$((insertion_point + 10)) # Adjust based on the number of lines in the existing routing
-            sudo sed -i "${line_after_insertion}i\\$include_statement" "$NGINX_CONFIG_FILE"
-        else
-            # Add before the closing brace
-            sudo sed -i "/location ~ \^\\/project/ a\\$include_statement" "$NGINX_CONFIG_FILE"
-        fi
+        # Add the include statement before the last closing brace of the server block
+        # Find the last } in the file (server block closing)
+        sudo sed -i '$i\    # Include all project hosting configs' "$NGINX_CONFIG_FILE"
+        sudo sed -i "\$i\\    $wildcard_include" "$NGINX_CONFIG_FILE"
+        sudo sed -i '$i\ ' "$NGINX_CONFIG_FILE"
+        
+        log "INFO" "Added wildcard include statement"
     fi
     
     # Test nginx configuration
