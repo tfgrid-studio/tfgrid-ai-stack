@@ -230,26 +230,26 @@ commands:
     args: "[backup-file]"
 
   publish:
-    script: /opt/tfgrid-ai-stack/src/scripts/publish-project.sh publish
+    script: /opt/tfgrid-ai-stack/scripts/publish-project.sh publish
     description: "Publish project for web hosting"
     args: "[project-name]"
 
   unpublish:
-    script: /opt/tfgrid-ai-stack/src/scripts/publish-project.sh unpublish
+    script: /opt/tfgrid-ai-stack/scripts/publish-project.sh unpublish
     description: "Remove project from web hosting"
     args: "[project-name]"
 
   hosting-status:
-    script: /opt/tfgrid-ai-stack/src/scripts/publish-project.sh status
+    script: /opt/tfgrid-ai-stack/scripts/publish-project.sh status
     description: "Show hosting status for a project"
     args: "[project-name]"
 
   setup-hosting:
-    script: /opt/tfgrid-ai-stack/src/scripts/t-hosting.sh
+    script: /opt/tfgrid-ai-stack/scripts/t-hosting.sh
     description: "Setup nginx configuration for hosting"
 
   hosting-health:
-    script: /opt/tfgrid-ai-stack/src/scripts/t-hosting.sh
+    script: /opt/tfgrid-ai-stack/scripts/t-hosting.sh
     description: "Check hosting infrastructure status"
 
 # Documentation
