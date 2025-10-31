@@ -73,6 +73,16 @@ fi
 # Add developer to sudo group (optional, for admin tasks)
 usermod -aG sudo developer 2>/dev/null || true
 
+# Add nginx/www-data user to developer group for web hosting access
+echo "🔐 Configuring nginx permissions..."
+if id -u www-data >/dev/null 2>&1; then
+    usermod -aG developer www-data
+    echo "✅ Added www-data to developer group"
+elif id -u nginx >/dev/null 2>&1; then
+    usermod -aG developer nginx
+    echo "✅ Added nginx to developer group"
+fi
+
 # Configure git identity from tfgrid-compose credentials
 echo "🔧 Configuring git identity..."
 if [ -n "$TFGRID_GIT_NAME" ] && [ -n "$TFGRID_GIT_EMAIL" ]; then

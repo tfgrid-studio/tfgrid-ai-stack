@@ -185,6 +185,35 @@ update_nginx_config() {
     return 0
 }
 
+# Function to set permissions for nginx access
+set_nginx_permissions() {
+    local project_path="$1"
+    
+    log "INFO" "Setting permissions for nginx access..."
+    
+    # Get the web root directory
+    local web_root=$(find_web_root "$project_path")
+    
+    # Ensure parent directories are accessible by nginx group
+    # Set 750 (rwxr-x---) for directories - owner and group can access
+    chmod 750 "$project_path" 2>/dev/null || true
+    
+    # If web root is a subdirectory, set its permissions too
+    if [ "$web_root" != "$project_path/" ]; then
+        local web_dir=$(dirname "$web_root")
+        chmod 750 "$web_dir" 2>/dev/null || true
+    fi
+    
+    # Set 640 (rw-r-----) for files - owner can write, group can read
+    find "$project_path" -type f -exec chmod 640 {} \; 2>/dev/null || true
+    
+    # Ensure directory permissions for all subdirectories
+    find "$project_path" -type d -exec chmod 750 {} \; 2>/dev/null || true
+    
+    log "INFO" "Permissions set successfully"
+    return 0
+}
+
 # Function to build project if needed
 build_project() {
     local project_path="$1"
@@ -343,6 +372,11 @@ publish_project() {
     if ! update_nginx_config "$org_name" "$project_name" "$project_type" "$project_path"; then
         log "ERROR" "Failed to update nginx configuration"
         return 1
+    fi
+    
+    # Set permissions for nginx access
+    if ! set_nginx_permissions "$project_path"; then
+        log "WARNING" "Failed to set some permissions, but continuing..."
     fi
     
     # Record publish time
