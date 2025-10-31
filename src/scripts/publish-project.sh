@@ -231,28 +231,28 @@ get_available_projects() {
 
 # Function for interactive project selection
 interactive_select_project() {
-    echo ""
-    echo "📁 Select a project to publish:"
-    echo ""
+    echo "" >&2
+    echo "📁 Select a project to publish:" >&2
+    echo "" >&2
     
     # Get available projects
     mapfile -t projects < <(get_available_projects)
     
     if [ ${#projects[@]} -eq 0 ]; then
-        echo "No projects available to publish"
-        echo ""
-        echo "Create a project: tfgrid-compose create"
+        echo "No projects available to publish" >&2
+        echo "" >&2
+        echo "Create a project: tfgrid-compose create" >&2
         return 1
     fi
     
     # List projects with numbers
     local i=1
     for project in "${projects[@]}"; do
-        echo "  $i) $project"
+        echo "  $i) $project" >&2
         ((i++))
     done
     
-    echo ""
+    echo "" >&2
     read -p "Enter number [1-${#projects[@]}] or 'q' to quit: " choice
     
     if [[ "$choice" == "q" ]] || [[ "$choice" == "Q" ]]; then
@@ -260,7 +260,7 @@ interactive_select_project() {
     fi
     
     if ! [[ "$choice" =~ ^[0-9]+$ ]] || [ "$choice" -lt 1 ] || [ "$choice" -gt ${#projects[@]} ]; then
-        echo "❌ Invalid selection"
+        echo "❌ Invalid selection" >&2
         return 1
     fi
     
