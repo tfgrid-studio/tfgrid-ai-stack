@@ -120,25 +120,46 @@ EOF
 # Create tfgrid-ai-stack directories (system-level for management scripts)
 echo "📁 Creating tfgrid-ai-stack directories..."
 mkdir -p /opt/tfgrid-ai-stack/logs
+mkdir -p /opt/tfgrid-ai-stack/scripts
+mkdir -p /opt/tfgrid-ai-stack/src
+mkdir -p /opt/tfgrid-ai-stack/agent
 
-# Copy entire src directory to preserve structure
+# Copy source files to appropriate locations
 echo "📋 Copying source files..."
 if [ -d "/tmp/app-source" ]; then
-    # Copy contents of /tmp/app-source/ to /opt/tfgrid-ai-stack/src/
-    cp -r /tmp/app-source/* /opt/tfgrid-ai-stack/src/ || \
-    cp -r /tmp/app-source /opt/tfgrid-ai-stack/src || true
+    # Copy scripts directory to /opt/tfgrid-ai-stack/scripts/ (as expected by manifest)
+    if [ -d "/tmp/app-source/scripts" ]; then
+        mkdir -p /opt/tfgrid-ai-stack/scripts
+        cp -r /tmp/app-source/scripts/* /opt/tfgrid-ai-stack/scripts/ || true
+        echo "✅ Scripts copied to /opt/tfgrid-ai-stack/scripts/"
+    fi
+    
+    # Copy agent directory with JS files
+    if [ -d "/tmp/app-source/agent" ]; then
+        mkdir -p /opt/tfgrid-ai-stack/agent
+        cp -r /tmp/app-source/agent/* /opt/tfgrid-ai-stack/agent/ || true
+        echo "✅ Agent files copied to /opt/tfgrid-ai-stack/agent/"
+    fi
+    
+    # Copy other directories
+    cp -r /tmp/app-source/systemd/* /opt/tfgrid-ai-stack/ 2>/dev/null || true
+    cp -r /tmp/app-source/templates/* /opt/tfgrid-ai-stack/ 2>/dev/null || true
+    
     echo "✅ Source files copied"
 else
-    echo "⚠️  Warning: /tmp/app-source not found, creating empty src structure"
-    mkdir -p /opt/tfgrid-ai-stack/src/scripts
+    echo "⚠️  Warning: /tmp/app-source not found"
 fi
 
 # Make scripts executable
-chmod +x /opt/tfgrid-ai-stack/src/scripts/*.sh
+chmod +x /opt/tfgrid-ai-stack/scripts/*.sh 2>/dev/null || true
+chmod +x /opt/tfgrid-ai-stack/agent/*.js 2>/dev/null || true
 
 # Set proper ownership
 chown -R developer:developer /opt/tfgrid-ai-stack
-chmod -R 755 /opt/tfgrid-ai-stack/src/scripts
+chmod -R 755 /opt/tfgrid-ai-stack/scripts
+chmod -R 755 /opt/tfgrid-ai-stack/src
+chmod -R 755 /opt/tfgrid-ai-stack/agent
+chmod +x /opt/tfgrid-ai-stack/agent/*.js 2>/dev/null || true
 
 # Create log directory
 mkdir -p /var/log/ai-agent
