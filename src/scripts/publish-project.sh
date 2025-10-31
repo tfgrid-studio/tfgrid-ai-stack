@@ -11,6 +11,8 @@ source "$SCRIPT_DIR/hosting-project.sh"
 
 PROJECT_NAME="$1"
 
+# If no argument OR if "publish" is passed as project name, use interactive mode
+if [ -z "$PROJECT_NAME" ] || [ "$PROJECT_NAME" = "publish" ]; then
 # If no argument, interactive mode
 if [ -z "$PROJECT_NAME" ]; then
     # Interactive mode - prompt for project selection

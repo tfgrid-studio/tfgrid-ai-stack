@@ -18,6 +18,44 @@ if [ -z "$PROJECT_NAME" ]; then
         PROJECT_NAME=$(grep "^active_project:" "$CONTEXT_FILE" 2>/dev/null | awk '{print $2}')
     fi
     
+# If no argument, interactive mode - prompt for project selection
+if [ -z "$PROJECT_NAME" ]; then
+    # Get available projects
+    mapfile -t projects < <(list_projects_brief)
+    
+    if [ ${#projects[@]} -eq 0 ]; then
+        echo "❌ No projects available to monitor"
+        echo ""
+        echo "Create a project: tfgrid-compose create"
+        exit 1
+    fi
+    
+    # List projects with numbers
+    echo "📁 Select a project to monitor:"
+    echo ""
+    local i=1
+    for project in "${projects[@]}"; do
+        # Remove the "- " prefix
+        project_name=$(echo "$project" | sed 's/^- //')
+        echo "  $i) $project_name"
+        ((i++))
+    done
+    
+    echo ""
+    read -p "Enter number [1-${#projects[@]}] or 'q' to quit: " choice
+    
+    if [[ "$choice" == "q" ]] || [[ "$choice" == "Q" ]]; then
+        exit 0
+    fi
+    
+    if ! [[ "$choice" =~ ^[0-9]+$ ]] || [ "$choice" -lt 1 ] || [ "$choice" -gt ${#projects[@]} ]; then
+        echo "❌ Invalid selection"
+        exit 1
+    fi
+    
+    # Get selected project name (remove the "- " prefix)
+    PROJECT_NAME=$(echo "${projects[$((choice-1))]}" | sed 's/^- //')
+fi
     if [ -z "$PROJECT_NAME" ]; then
         echo "❌ No project specified and no project selected"
         echo ""
