@@ -123,7 +123,15 @@ mkdir -p /opt/tfgrid-ai-stack/logs
 
 # Copy entire src directory to preserve structure
 echo "📋 Copying source files..."
-cp -r /tmp/app-source/src /opt/tfgrid-ai-stack/
+if [ -d "/tmp/app-source" ]; then
+    # Copy contents of /tmp/app-source/ to /opt/tfgrid-ai-stack/src/
+    cp -r /tmp/app-source/* /opt/tfgrid-ai-stack/src/ || \
+    cp -r /tmp/app-source /opt/tfgrid-ai-stack/src || true
+    echo "✅ Source files copied"
+else
+    echo "⚠️  Warning: /tmp/app-source not found, creating empty src structure"
+    mkdir -p /opt/tfgrid-ai-stack/src/scripts
+fi
 
 # Make scripts executable
 chmod +x /opt/tfgrid-ai-stack/src/scripts/*.sh
