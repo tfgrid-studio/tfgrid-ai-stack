@@ -217,11 +217,11 @@ build_project() {
 get_available_projects() {
     local api_response
     
-    echo "Fetching available projects..."
+    echo "Fetching available projects..." >&2
     api_response=$(curl -s http://localhost:8080/api/projects 2>/dev/null || echo "")
     
     if [ -z "$api_response" ] || echo "$api_response" | grep -q '"error"'; then
-        echo "No projects found or AI Agent not responding"
+        echo "No projects found or AI Agent not responding" >&2
         return 1
     fi
     
