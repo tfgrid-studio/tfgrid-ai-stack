@@ -229,6 +229,29 @@ commands:
     description: "Restore from backup"
     args: "[backup-file]"
 
+  publish:
+    script: /opt/tfgrid-ai-stack/src/scripts/publish-project.sh
+    description: "Publish project for web hosting"
+    args: "[project-name]"
+
+  unpublish:
+    script: /opt/tfgrid-ai-stack/src/scripts/publish-project.sh
+    description: "Remove project from web hosting"
+    args: "[project-name]"
+
+  hosting-status:
+    script: /opt/tfgrid-ai-stack/src/scripts/publish-project.sh
+    description: "Show hosting status for a project"
+    args: "[project-name]"
+
+  setup-hosting:
+    script: /opt/tfgrid-ai-stack/src/scripts/t-hosting.sh
+    description: "Setup nginx configuration for hosting"
+
+  hosting-health:
+    script: /opt/tfgrid-ai-stack/src/scripts/t-hosting.sh
+    description: "Check hosting infrastructure status"
+
 # Documentation
 documentation:
   readme: README.md
