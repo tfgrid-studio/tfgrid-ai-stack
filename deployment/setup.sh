@@ -109,19 +109,18 @@ EOF
 
 # Create tfgrid-ai-stack directories (system-level for management scripts)
 echo "📁 Creating tfgrid-ai-stack directories..."
-mkdir -p /opt/tfgrid-ai-stack/{scripts,templates,logs}
+mkdir -p /opt/tfgrid-ai-stack/logs
 
-# Copy scripts and templates from app source
-echo "📋 Copying scripts and templates..."
-cp -r /tmp/app-source/scripts /opt/tfgrid-ai-stack/
-cp -r /tmp/app-source/templates /opt/tfgrid-ai-stack/
+# Copy entire src directory to preserve structure
+echo "📋 Copying source files..."
+cp -r /tmp/app-source/src /opt/tfgrid-ai-stack/
 
 # Make scripts executable
-chmod +x /opt/tfgrid-ai-stack/scripts/*.sh
+chmod +x /opt/tfgrid-ai-stack/src/scripts/*.sh
 
 # Set proper ownership
 chown -R developer:developer /opt/tfgrid-ai-stack
-chmod -R 755 /opt/tfgrid-ai-stack/scripts
+chmod -R 755 /opt/tfgrid-ai-stack/src/scripts
 
 # Create log directory
 mkdir -p /var/log/ai-agent
