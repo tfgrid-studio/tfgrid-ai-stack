@@ -55,6 +55,40 @@ echo "Prompt file: $PROMPT_FILE"
 echo "Logging to: $LOG_FILE"
 echo "------------------------"
 
+# Inject AI Agent Safety Guidelines
+echo "
+🚨 AI AGENT SAFETY GUIDELINES - CRITICAL FOR TROUBLESHOOTING:
+
+NEVER USE BLOCKING COMMANDS:
+❌ journalctl -f          (use: journalctl -n 50 --no-pager)
+❌ tail -f /path/to/log   (use: tail -n 50 /path/to/log)
+❌ systemctl status       (use: systemctl status --no-pager)
+❌ ping -f                (use: ping -c 10)
+❌ watch command          (use: timeout 30s command)
+
+ALWAYS ADD THESE SAFETY FLAGS:
+✅ --no-pager for status/viewing commands
+✅ -n 50 for log viewing (limits to 50 lines)
+✅ -c 10 for network tests (limits to 10 packets)
+✅ timeout 30s for any potentially long-running command
+
+CRITICAL: These guidelines prevent the AI agent from getting stuck in infinite
+blocking commands that require manual intervention. Always follow them during
+troubleshooting and debugging sessions.
+" > "$PROMPT_FILE.safety"
+
+# Prepend safety guidelines to the prompt
+if [ -f "$PROMPT_FILE" ]; then
+    # If original prompt exists, prepend safety guidelines
+    cat "$PROMPT_FILE.safety" "$PROMPT_FILE" > "$PROMPT_FILE.tmp"
+    mv "$PROMPT_FILE.tmp" "$PROMPT_FILE"
+else
+    # If no prompt exists, create one with safety guidelines
+    mv "$PROMPT_FILE.safety" "$PROMPT_FILE"
+fi
+
+echo "Safety guidelines injected into prompt"
+
 # Main loop
 
 while true; do
