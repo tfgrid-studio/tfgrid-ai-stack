@@ -17,7 +17,8 @@ if [ -z "$PROJECT_NAME" ]; then
     if [ -f "$CONTEXT_FILE" ]; then
         PROJECT_NAME=$(grep "^active_project:" "$CONTEXT_FILE" 2>/dev/null | awk '{print $2}')
     fi
-    
+fi
+
 # If no argument, interactive mode - prompt for project selection
 if [ -z "$PROJECT_NAME" ]; then
     # Get available projects
@@ -33,7 +34,7 @@ if [ -z "$PROJECT_NAME" ]; then
     # List projects with numbers
     echo "📁 Select a project to monitor:"
     echo ""
-    local i=1
+    i=1
     for project in "${projects[@]}"; do
         # Remove the "- " prefix
         project_name=$(echo "$project" | sed 's/^- //')
@@ -55,15 +56,6 @@ if [ -z "$PROJECT_NAME" ]; then
     
     # Get selected project name (remove the "- " prefix)
     PROJECT_NAME=$(echo "${projects[$((choice-1))]}" | sed 's/^- //')
-fi
-    if [ -z "$PROJECT_NAME" ]; then
-        echo "❌ No project specified and no project selected"
-        echo ""
-        echo "Either:"
-        echo "  1. Run: tfgrid-compose select-project"
-        echo "  2. Or: tfgrid-compose monitor <project-name>"
-        exit 1
-    fi
 fi
 
 # Find project in workspace
