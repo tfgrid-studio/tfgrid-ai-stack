@@ -47,12 +47,12 @@ list_projects_brief() {
     find "$workspace_base" -maxdepth 4 -type d -name ".agent" 2>/dev/null | while read -r agent_dir; do
         local dir=$(dirname "$agent_dir")
         local name=$(basename "$dir")
-        echo "  - $name"
+        echo "$name"
         found=true
     done
     
     if [ "$found" = false ]; then
-        echo "  (no projects found)"
+        echo "(no projects found)"
     fi
 }
 

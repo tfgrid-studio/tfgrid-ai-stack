@@ -37,9 +37,7 @@ if [ -z "$PROJECT_NAME" ]; then
     echo ""
     i=1
     for project in "${projects[@]}"; do
-        # Remove the "- " prefix
-        project_name=$(echo "$project" | sed 's/^- //')
-        echo "  $i) $project_name"
+        echo "  $i) $project"
         ((i++))
     done
     
@@ -55,8 +53,8 @@ if [ -z "$PROJECT_NAME" ]; then
         exit 1
     fi
     
-    # Get selected project name (remove the "- " prefix)
-    PROJECT_NAME=$(echo "${projects[$((choice-1))]}" | sed 's/^- //')
+    # Get selected project name
+    PROJECT_NAME="${projects[$((choice-1))]}"
 fi
 
 # Find project in workspace
