@@ -28,7 +28,7 @@ if [ -z "$PROJECT_NAME" ] || [ "$PROJECT_NAME" = "publish" ]; then
     fi
     
     # List projects with numbers
-    local i=1
+    i=1
     for project in "${projects[@]}"; do
         # Remove the "- " prefix
         project_name=$(echo "$project" | sed 's/^- //')
