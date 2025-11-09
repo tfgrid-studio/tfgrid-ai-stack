@@ -198,12 +198,12 @@ fi
 
 echo ""
 echo "🚀 Next Steps for Deployment:"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-1. Run hosting setup: t setup-hosting
-2. Test with a project: t publish test-project
-3. Check enhanced status: tfgrid-compose status
-4. Review hosting health: t hosting-health
-5. Read documentation: tfgrid-ai-stack/docs/GATEWAY-HOSTING.md"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "1. Run hosting setup: t setup-hosting"
+echo "2. Test with a project: t publish test-project"
+echo "3. Check enhanced status: tfgrid-compose status"
+echo "4. Review hosting health: t hosting-health"
+echo "5. Read documentation: tfgrid-ai-stack/docs/GATEWAY-HOSTING.md"
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
