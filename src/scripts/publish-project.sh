@@ -102,27 +102,31 @@ echo ""
 # Create AI agent context for publishing
 cd "$PROJECT_PATH"
 
-# Create publishing prompt for AI agent
-cat > .agent/publish-prompt.md << EOF
-# AI Agent Publishing Task
+# Use publish prompt template
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TEMPLATE_DIR="$SCRIPT_DIR/../../../templates/generic"
 
-You are tasked with intelligently publishing this project for web hosting.
+# Create directory for agent files
+mkdir -p "$PROJECT_PATH/.agent"
 
-## Project Information
+# Copy and enhance the publish prompt template
+cp "$TEMPLATE_DIR/publish-prompt.md" "$PROJECT_PATH/.agent/publish-prompt.md"
+
+# Add project-specific context to the template
+cat >> "$PROJECT_PATH/.agent/publish-prompt.md" << EOF
+
+## Project Context
 - **Project Name**: $PROJECT_NAME
 - **Project Path**: $PROJECT_PATH
 - **Organization**: $ORG_NAME
 - **Project Type**: $(detect_project_type "$PROJECT_PATH")
 
-## Your Mission
-1. **Analyze the project structure** and determine optimal hosting configuration
-2. **Detect the correct organization** from the project's Git remote URL
-3. **Set up web hosting** by creating proper nginx configuration
-4. **Ensure proper file permissions** for web access
-5. **Create deployment URLs** for both Git and web access
-
-## Specific Requirements
-- **Organization**: Use "$ORG_NAME" (not "default")
+## Deployment Information
+- **Server IP**: 10.1.3.2
+- **Expected URLs**:
+  - Git: http://10.1.3.2/git/$ORG_NAME/$PROJECT_NAME/
+  - Web: http://10.1.3.2/web/$ORG_NAME/$PROJECT_NAME/
+EOF
 - **Git URL**: http://10.1.3.2/git/$ORG_NAME/$PROJECT_NAME
 - **Web URL**: http://10.1.3.2/web/$ORG_NAME/$PROJECT_NAME
 - **Project Type**: $(detect_project_type "$PROJECT_PATH")
