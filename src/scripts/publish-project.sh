@@ -24,14 +24,14 @@ if [ -z "$PROJECT_NAME" ] || [ "$PROJECT_NAME" = "publish" ]; then
         echo "No projects available to publish"
         echo ""
         echo "Create a project: tfgrid-compose create"
-        return 1
+        exit 1
     fi
     
     # List projects with numbers
-    local i=1
+    i=1
     for project in "${projects[@]}"; do
         # Remove the "- " prefix
-        local project_name=$(echo "$project" | sed 's/^- //')
+        project_name=$(echo "$project" | sed 's/^- //')
         echo "  $i) $project_name"
         ((i++))
     done
@@ -40,12 +40,12 @@ if [ -z "$PROJECT_NAME" ] || [ "$PROJECT_NAME" = "publish" ]; then
     read -p "Enter number [1-${#projects[@]}] or 'q' to quit: " choice
     
     if [[ "$choice" == "q" ]] || [[ "$choice" == "Q" ]]; then
-        return 1
+        exit 1
     fi
     
     if ! [[ "$choice" =~ ^[0-9]+$ ]] || [ "$choice" -lt 1 ] || [ "$choice" -gt ${#projects[@]} ]; then
         echo "❌ Invalid selection"
-        return 1
+        exit 1
     fi
     
     # Get selected project name (remove the "- " prefix)
