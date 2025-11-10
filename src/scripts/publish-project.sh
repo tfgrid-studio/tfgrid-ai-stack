@@ -167,7 +167,7 @@ echo "🧠 Calling Qwen AI for intelligent publishing..."
 echo ""
 
 # Execute Qwen AI with the publish context
-su - developer -c "cd '$PROJECT_PATH' && qwen-code --approval-mode yolo --sandbox false --iterations 1 --prompt '.agent/publish-prompt.md'"
+su - developer -c "cd '$PROJECT_PATH' && qwen --approval-mode yolo --sandbox false --prompt '.agent/publish-prompt.md'"
 
 echo ""
 echo "🎉 AI Agent publishing process completed!"
