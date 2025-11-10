@@ -102,6 +102,21 @@ echo ""
 # Create AI agent context for publishing
 cd "$PROJECT_PATH"
 
+# Get deployment IP dynamically (like other scripts)
+if [ -n "${PRIMARY_IP:-}" ]; then
+    DEPLOYMENT_IP="${PRIMARY_IP}"
+elif [ -n "${TFGRID_WIREGUARD_IP:-}" ]; then
+    DEPLOYMENT_IP="${TFGRID_WIREGUARD_IP}"
+else
+    # Try to get from state file if available
+    if [ -f "/tmp/app-deployment/state.yaml" ]; then
+        DEPLOYMENT_IP=$(grep "^primary_ip:" /tmp/app-deployment/state.yaml 2>/dev/null | awk '{print $2}')
+    fi
+    if [ -z "$DEPLOYMENT_IP" ] && [ -f "/tmp/app-deployment/../state.yaml" ]; then
+        DEPLOYMENT_IP=$(grep "^primary_ip:" /tmp/app-deployment/../state.yaml 2>/dev/null | awk '{print $2}')
+    fi
+fi
+
 # Use publish prompt template
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEMPLATE_DIR="$SCRIPT_DIR/../../../templates/generic"
@@ -112,20 +127,28 @@ mkdir -p "$PROJECT_PATH/.agent"
 # Copy and enhance the publish prompt template
 cp "$TEMPLATE_DIR/publish-prompt.md" "$PROJECT_PATH/.agent/publish-prompt.md"
 
-# Add project-specific context to the template
+# Add dynamic deployment context to the template
 cat >> "$PROJECT_PATH/.agent/publish-prompt.md" << EOF
+
+## Dynamic Deployment Context
+- **Deployment IP**: ${DEPLOYMENT_IP:-127.0.0.1}
+- **GIT_BASE_URL**: http://${DEPLOYMENT_IP:-127.0.0.1}/git
+- **WEB_BASE_URL**: http://${DEPLOYMENT_IP:-127.0.0.1}
+- **Project Path**: ${ORG_NAME}/${PROJECT_NAME}
+- **Full Git URL**: http://${DEPLOYMENT_IP:-127.0.0.1}/git/${ORG_NAME}/${PROJECT_NAME}
+- **Full Web URL**: http://${DEPLOYMENT_IP:-127.0.0.1}/web/${ORG_NAME}/${PROJECT_NAME}/
 
 ## Project Context
 - **Project Name**: $PROJECT_NAME
-- **Project Path**: $PROJECT_PATH
 - **Organization**: $ORG_NAME
 - **Project Type**: $(detect_project_type "$PROJECT_PATH")
 
-## Deployment Information
-- **Server IP**: 10.1.3.2
-- **Expected URLs**:
-  - Git: http://10.1.3.2/git/$ORG_NAME/$PROJECT_NAME/
-  - Web: http://10.1.3.2/web/$ORG_NAME/$PROJECT_NAME/
+## Your Mission
+1. **Check the Git repository** at: http://${DEPLOYMENT_IP:-127.0.0.1}/git/${ORG_NAME}/${PROJECT_NAME}
+2. **Analyze the project** to determine hosting strategy
+3. **Fetch project files** from the git repository
+4. **Publish to web** at: http://${DEPLOYMENT_IP:-127.0.0.1}/web/${ORG_NAME}/${PROJECT_NAME}/
+5. **Ensure both URLs work**: Git and Web access
 EOF
 - **Git URL**: http://10.1.3.2/git/$ORG_NAME/$PROJECT_NAME
 - **Web URL**: http://10.1.3.2/web/$ORG_NAME/$PROJECT_NAME
