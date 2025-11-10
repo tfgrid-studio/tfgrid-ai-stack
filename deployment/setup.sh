@@ -720,6 +720,14 @@ server {
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
     }
+# Web hosting for published projects
+    location /web/ {
+        root /home/developer/code/tfgrid-ai-stack-projects;
+        try_files /tfgrid-ai-agent/$uri /tfgrid-ai-agent/index.html =404;
+        autoindex on;
+        autoindex_exact_size off;
+        autoindex_localtime on;
+    }
 
     # Project routing (dynamic)
     location ~ ^/project([0-9]+)/ {
