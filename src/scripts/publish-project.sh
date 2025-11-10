@@ -28,10 +28,10 @@ if [ -z "$PROJECT_NAME" ] || [ "$PROJECT_NAME" = "publish" ]; then
     fi
     
     # List projects with numbers
-    i=1
+    local i=1
     for project in "${projects[@]}"; do
         # Remove the "- " prefix
-        project_name=$(echo "$project" | sed 's/^- //')
+        local project_name=$(echo "$project" | sed 's/^- //')
         echo "  $i) $project_name"
         ((i++))
     done
@@ -167,7 +167,7 @@ echo "🧠 Calling Qwen AI for intelligent publishing..."
 echo ""
 
 # Execute Qwen AI with the publish context
-su - developer -c "cd '$PROJECT_PATH' && qwen --approval-mode yolo --sandbox false --prompt '.agent/publish-prompt.md'"
+su - developer -c "cd '$PROJECT_PATH' && qwen --approval-mode yolo --sandbox false < '.agent/publish-prompt.md'"
 
 echo ""
 echo "🎉 AI Agent publishing process completed!"
