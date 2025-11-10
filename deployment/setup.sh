@@ -744,7 +744,7 @@ server {
 # Web hosting for published projects
     location /web/ {
         root /home/developer/code/tfgrid-ai-stack-projects;
-        try_files /tfgrid-ai-agent/$uri /tfgrid-ai-agent/index.html =404;
+        try_files $uri $uri/ =404;
         autoindex on;
         autoindex_exact_size off;
         autoindex_localtime on;

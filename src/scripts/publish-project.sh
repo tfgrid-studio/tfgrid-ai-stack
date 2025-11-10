@@ -166,8 +166,61 @@ echo ""
 echo "🧠 Calling Qwen AI for intelligent publishing..."
 echo ""
 
-# Execute Qwen AI with the publish context
+# Execute Qwen AI with the publish context using the new prompt
 su - developer -c "cd '$PROJECT_PATH' && qwen --approval-mode yolo --sandbox false < '.agent/publish-prompt.md'"
+
+# Ensure the project is properly placed for web hosting
+echo "🔧 Ensuring proper web hosting directory structure..."
+
+# Get the real organization from git config with fallback
+REAL_ORG=$(su - developer -c "cd '$PROJECT_PATH' && git config --get remote.origin.url" 2>/dev/null | sed 's|.*://[^/]*/||' | sed 's|/$||' | cut -d'/' -f1 || echo "tfgrid-ai-agent")
+
+# Sanitize organization name
+REAL_ORG=$(echo "$REAL_ORG" | tr -cd 'a-zA-Z0-9-_')
+
+# Validate organization name
+if [ -z "$REAL_ORG" ] || [ "$REAL_ORG" = "default" ]; then
+    REAL_ORG="tfgrid-ai-agent"
+fi
+
+echo "📂 Project Organization: $REAL_ORG"
+
+# Create the proper directory structure for web hosting
+WEB_HOSTING_DIR="/home/developer/code/tfgrid-ai-stack-projects/$REAL_ORG/$PROJECT_NAME"
+sudo mkdir -p "$WEB_HOSTING_DIR/src"
+sudo mkdir -p "$WEB_HOSTING_DIR/.agent"
+
+# Copy project files to web hosting directory
+if [ -d "$PROJECT_PATH/src" ]; then
+    sudo cp -r "$PROJECT_PATH/src/"* "$WEB_HOSTING_DIR/src/" 2>/dev/null || true
+fi
+
+# Copy the publish prompt to the web hosting directory for AI reference
+sudo cp "$PROJECT_PATH/.agent/publish-prompt.md" "$WEB_HOSTING_DIR/.agent/" 2>/dev/null || true
+
+# Set proper permissions for web serving
+sudo chmod -R 644 "$WEB_HOSTING_DIR/src/" 2>/dev/null || true
+sudo chmod -R 755 "$WEB_HOSTING_DIR/" 2>/dev/null || true
+sudo chown -R www-data:www-data "$WEB_HOSTING_DIR/" 2>/dev/null || true
+
+# Test the web hosting
+echo "🧪 Testing web hosting configuration..."
+if sudo curl -s "http://localhost/web/$REAL_ORG/$PROJECT_NAME/" >/dev/null 2>&1; then
+    echo "✅ Web hosting is working!"
+    echo "   Project accessible at: http://SERVER_IP/web/$REAL_ORG/$PROJECT_NAME/"
+else
+    echo "⚠️  Web hosting test failed - may need nginx reload"
+    # Reload nginx to ensure configuration is updated
+    sudo systemctl reload nginx 2>/dev/null || true
+    sleep 2
+    if sudo curl -s "http://localhost/web/$REAL_ORG/$PROJECT_NAME/" >/dev/null 2>&1; then
+        echo "✅ Web hosting working after nginx reload!"
+    fi
+fi
+
+echo "✅ Web hosting directory structure prepared"
+echo "   Project will be available at: http://10.1.3.2/web/$REAL_ORG/$PROJECT_NAME/"
+echo "   Gitea is still accessible at: http://10.1.3.2/git/"
 
 echo ""
 echo "🎉 AI Agent publishing process completed!"
