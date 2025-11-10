@@ -73,6 +73,27 @@ fi
 # Add developer to sudo group (optional, for admin tasks)
 usermod -aG sudo developer 2>/dev/null || true
 
+# Run AI agent sudo setup script for full permissions
+if [ -f "$(dirname "$0")/../src/scripts/ai-agent-sudo-setup.sh" ]; then
+    echo "🔐 Setting up AI agent sudo permissions..."
+    bash "$(dirname "$0")/../src/scripts/ai-agent-sudo-setup.sh"
+else
+    echo "⚠️  AI agent sudo setup script not found, creating manually..."
+    # Create sudoers file for developer user (AI agent user)
+    cat > /etc/sudoers.d/developer-nginx << 'EOF'
+# AI Agent (developer user) can manage nginx and hosting without password
+developer ALL=(ALL) NOPASSWD: /usr/bin/nginx
+developer ALL=(ALL) NOPASSWD: /usr/bin/systemctl reload nginx
+developer ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart nginx
+developer ALL=(ALL) NOPASSWD: /bin/mkdir
+developer ALL=(ALL) NOPASSWD: /bin/chmod
+developer ALL=(ALL) NOPASSWD: /bin/chown
+developer ALL=(ALL) NOPASSWD: /usr/sbin/nginx
+developer ALL=(ALL) NOPASSWD: /usr/bin/systemctl
+EOF
+    chmod 0440 /etc/sudoers.d/developer-nginx
+fi
+
 # Add nginx/www-data user to developer group for web hosting access
 echo "🔐 Configuring nginx permissions..."
 if id -u www-data >/dev/null 2>&1; then
