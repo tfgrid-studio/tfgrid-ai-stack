@@ -153,8 +153,8 @@ cat >> "$PROJECT_PATH/.agent/publish-prompt.md" << EOF
 4. **Publish to web** at: http://${DEPLOYMENT_IP:-127.0.0.1}/web/${ORG_NAME}/${PROJECT_NAME}/
 5. **Ensure both URLs work**: Git and Web access
 EOF
-- **Git URL**: http://10.1.3.2/git/$ORG_NAME/$PROJECT_NAME
-- **Web URL**: http://10.1.3.2/web/$ORG_NAME/$PROJECT_NAME
+- **Git URL**: http://${DEPLOYMENT_IP:-127.0.0.1}/git/$ORG_NAME/$PROJECT_NAME
+- **Web URL**: http://${DEPLOYMENT_IP:-127.0.0.1}/web/$ORG_NAME/$PROJECT_NAME
 - **Project Type**: $(detect_project_type "$PROJECT_PATH")
 - **Hosting Method**: Nginx reverse proxy configuration
 
