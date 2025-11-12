@@ -12,45 +12,48 @@ source "$SCRIPT_DIR/hosting-project.sh"
 PROJECT_NAME="$1"
 
 # If no argument OR if "publish" is passed as project name, use interactive mode
-if [ -z "$PROJECT_NAME" ] || [ "$PROJECT_NAME" = "publish" ]; then
-    # Interactive mode - prompt for project selection
-    echo "📁 Select a project to publish:"
-    echo ""
-    
-    # Get available projects
-    mapfile -t projects < <(list_projects_brief)
-    
-    if [ ${#projects[@]} -eq 0 ]; then
-        echo "No projects available to publish"
+# Main function for script execution
+main() {
+    if [ -z "$PROJECT_NAME" ] || [ "$PROJECT_NAME" = "publish" ]; then
+        # Interactive mode - prompt for project selection
+        echo "📁 Select a project to publish:"
         echo ""
-        echo "Create a project: tfgrid-compose create"
-        exit 1
+        
+        # Get available projects
+        mapfile -t projects < <(list_projects_brief)
+        
+        if [ ${#projects[@]} -eq 0 ]; then
+            echo "No projects available to publish"
+            echo ""
+            echo "Create a project: tfgrid-compose create"
+            exit 1
+        fi
+        
+        # List projects with numbers
+        local i=1
+        for project in "${projects[@]}"; do
+            # Remove the "- " prefix
+            project_name=$(echo "$project" | sed 's/^- //')
+            echo "  $i) $project_name"
+            ((i++))
+        done
+        
+        echo ""
+        read -p "Enter number [1-${#projects[@]}] or 'q' to quit: " choice
+        
+        if [[ "$choice" == "q" ]] || [[ "$choice" == "Q" ]]; then
+            exit 1
+        fi
+        
+        if ! [[ "$choice" =~ ^[0-9]+$ ]] || [ "$choice" -lt 1 ] || [ "$choice" -gt ${#projects[@]} ]; then
+            echo "❌ Invalid selection"
+            exit 1
+        fi
+        
+        # Get selected project name (remove the "- " prefix)
+        PROJECT_NAME=$(echo "${projects[$((choice-1))]}" | sed 's/^- //')
     fi
-    
-    # List projects with numbers
-    i=1
-    for project in "${projects[@]}"; do
-        # Remove the "- " prefix
-        project_name=$(echo "$project" | sed 's/^- //')
-        echo "  $i) $project_name"
-        ((i++))
-    done
-    
-    echo ""
-    read -p "Enter number [1-${#projects[@]}] or 'q' to quit: " choice
-    
-    if [[ "$choice" == "q" ]] || [[ "$choice" == "Q" ]]; then
-        exit 1
-    fi
-    
-    if ! [[ "$choice" =~ ^[0-9]+$ ]] || [ "$choice" -lt 1 ] || [ "$choice" -gt ${#projects[@]} ]; then
-        echo "❌ Invalid selection"
-        exit 1
-    fi
-    
-    # Get selected project name (remove the "- " prefix)
-    PROJECT_NAME=$(echo "${projects[$((choice-1))]}" | sed 's/^- //')
-fi
+}
 
 echo "🤖 AI-Powered Project Publisher"
 echo "=================================="
