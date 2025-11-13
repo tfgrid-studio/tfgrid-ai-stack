@@ -249,13 +249,13 @@ else
 fi
 
 echo "✅ Web hosting directory structure prepared"
-echo "   Project will be available at: http://10.1.3.2/web/$REAL_ORG/$PROJECT_NAME/"
-echo "   Gitea is still accessible at: http://10.1.3.2/git/"
+echo "   Project will be available at: http://${DEPLOYMENT_IP}/web/$REAL_ORG/$PROJECT_NAME/"
+echo "   Gitea is still accessible at: http://${DEPLOYMENT_IP}/git/"
 
 echo ""
 echo "🎉 AI Agent publishing process completed!"
 echo ""
 echo "🌐 Your project should now be accessible at:"
-echo "   Git:  http://10.1.3.2/git/$ORG_NAME/$PROJECT_NAME"
-echo "   Web:  http://10.1.3.2/web/$ORG_NAME/$PROJECT_NAME"
+echo "   Git:  http://${DEPLOYMENT_IP}/git/$ORG_NAME/$PROJECT_NAME"
+echo "   Web:  http://${DEPLOYMENT_IP}/web/$ORG_NAME/$PROJECT_NAME"
 echo ""
