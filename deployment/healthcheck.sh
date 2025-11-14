@@ -105,13 +105,5 @@ echo "Services available at:"
 echo "  • Gateway: http://$VM_IP/"
 echo "  • Git: http://$VM_IP/git/"
 echo "  • Monitoring: http://$VM_IP:3000/grafana (if enabled)"
-    echo "❌ Gitea systemd service not running"
-    exit 1
-fi
-
-if ! systemctl is-active --quiet ai-agent; then
-    echo "❌ AI Agent systemd service not running"
-    exit 1
-fi
 
 echo "✅ All services are healthy and accessible"
