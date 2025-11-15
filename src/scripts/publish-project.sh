@@ -55,6 +55,8 @@ main() {
     fi
 }
 
+main
+
 echo "🤖 AI-Powered Project Publisher"
 echo "=================================="
 echo ""
