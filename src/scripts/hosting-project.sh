@@ -222,9 +222,171 @@ get_project_hosting_status() {
     return 0
 }
 
+# Function to initialize project cache
+# Usage: init_project_cache "project-path"
+# Creates .agent/project-cache.yaml with initial metadata
+init_project_cache() {
+    local project_path="$1"
+
+    local cache_file="$project_path/.agent/project-cache.yaml"
+    local project_name=$(basename "$project_path")
+
+    # Detect project metadata
+    local project_type=$(detect_project_type "$project_path")
+    local organization=$(get_project_org "$project_path")
+    local git_hash=$(cd "$project_path" && git rev-parse HEAD 2>/dev/null || echo "unknown")
+    local file_count=$(find "$project_path/src" -type f 2>/dev/null | wc -l || echo "0")
+    local analysis_time=$(date -u +%Y-%m-%dT%H:%M:%SZ +%3N)
+
+    # Create cache structure
+    cat > "$cache_file" << EOF
+# Project metadata cache for tfgrid-ai-stack
+# Generated: $analysis_time
+# This file enables fast publishing by caching expensive analysis operations
+
+project:
+  name: "$project_name"
+  type: "$project_type"
+  organization: "$organization"
+  path: "$project_path"
+
+change_detection:
+  git_hash: "$git_hash"
+  analysis_time: "$analysis_time"
+  file_count: $file_count
+
+hosting:
+  strategy: "$(determine_hosting_strategy "$project_type")"
+  hostable: $(is_project_hostable "$project_path" >/dev/null 2>&1 && echo "true" || echo "false")
+  last_published: null
+  publish_count: 0
+
+analysis:
+  hostable_reasons: |
+$(is_project_hostable "$project_path" 2>&1 || echo "Analysis pending")
+EOF
+
+    echo "✅ Project cache initialized: $cache_file"
+}
+
+# Function to determine hosting strategy based on project type
+# Usage: determine_hosting_strategy "project-type"
+determine_hosting_strategy() {
+    local project_type="$1"
+
+    case "$project_type" in
+        "react"|"vue"|"nextjs"|"nuxt"|"static")
+            echo "nginx-static"
+            ;;
+        "api")
+            echo "nginx-proxy"
+            ;;
+        "built-static")
+            echo "nginx-built-static"
+            ;;
+        "unknown"|"buildable")
+            echo "nginx-generic"
+            ;;
+        *)
+            echo "nginx-default"
+            ;;
+    esac
+}
+
+# Function to check if project cache is valid (not stale)
+# Usage: is_cache_valid "project-path" "force-check"
+# Returns: 0 if valid, 1 if needs refresh
+is_cache_valid() {
+    local project_path="$1"
+    local force_check="${2:-false}"
+
+    local cache_file="$project_path/.agent/project-cache.yaml"
+
+    # If no cache exists or force check requested
+    if [ ! -f "$cache_file" ] || [ "$force_check" = "true" ]; then
+        return 1
+    fi
+
+    # Check if git hash changed
+    local cached_hash=$(yq eval '.change_detection.git_hash // "unknown"' "$cache_file" 2>/dev/null || echo "unknown")
+    local current_hash=$(cd "$project_path" && git rev-parse HEAD 2>/dev/null || echo "unknown")
+
+    if [ "$cached_hash" != "$current_hash" ] && [ "$current_hash" != "unknown" ]; then
+        return 1
+    fi
+
+    # Check if file count changed (indicates new files)
+    local cached_count=$(yq eval '.change_detection.file_count // 0' "$cache_file" 2>/dev/null || echo "0")
+    local current_count=$(find "$project_path/src" -type f 2>/dev/null | wc -l || echo "0")
+
+    if [ "$cached_count" != "$current_count" ]; then
+        return 1
+    fi
+
+    return 0
+}
+
+# Function to update project cache after publish
+# Usage: update_cache_after_publish "project-path" "deployment-ip"
+update_cache_after_publish() {
+    local project_path="$1"
+    local deployment_ip="$2"
+
+    local cache_file="$project_path/.agent/project-cache.yaml"
+
+    if [ ! -f "$cache_file" ]; then
+        init_project_cache "$project_path"
+        return
+    fi
+
+    # Update publish metadata
+    local publish_time=$(date -u +%Y-%m-%dT%H:%M:%SZ +%3N)
+    local current_count=$(yq eval '.hosting.publish_count // 0' "$cache_file" 2>/dev/null || echo "0")
+    local new_count=$((current_count + 1))
+
+    # Update cache with yq
+    yq eval ".hosting.last_published = \"$publish_time\" | .hosting.publish_count = $new_count | .change_detection.analysis_time = \"$publish_time\"" "$cache_file" > "$cache_file.tmp" && mv "$cache_file.tmp" "$cache_file"
+
+    echo "✅ Project cache updated after publish: $cache_file"
+}
+
+# Function to get cached project metadata
+# Usage: get_cached_metadata "project-path" "field-path"
+# Example: get_cached_metadata "/path/to/project" ".project.type"
+get_cached_metadata() {
+    local project_path="$1"
+    local field_path="$2"
+
+    local cache_file="$project_path/.agent/project-cache.yaml"
+
+    if [ -f "$cache_file" ]; then
+        yq eval "$field_path" "$cache_file" 2>/dev/null || echo ""
+    else
+        echo ""
+    fi
+}
+
+# Function to invalidate project cache (force refresh)
+# Usage: invalidate_project_cache "project-path"
+invalidate_project_cache() {
+    local project_path="$1"
+    local cache_file="$project_path/.agent/project-cache.yaml"
+
+    if [ -f "$cache_file" ]; then
+        rm "$cache_file"
+        echo "✅ Project cache invalidated: $cache_file"
+    fi
+}
+
 # Export functions
 export -f detect_project_type
 export -f get_project_org
 export -f is_project_hostable
 export -f get_project_hosting_status
 export -f ensure_hosting_directories
+export -f init_project_cache
+export -f determine_hosting_strategy
+export -f is_cache_valid
+export -f update_cache_after_publish
+export -f get_cached_metadata
+export -f invalidate_project_cache

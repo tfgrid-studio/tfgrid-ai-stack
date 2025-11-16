@@ -631,6 +631,12 @@ if [ "$USER" = "root" ] || [ "$EUID" -eq 0 ]; then
     su - developer -c "git config --global --add safe.directory '$PROJECTS_DIR/$PROJECT_NAME'" 2>/dev/null || true
 fi
 
+# Initialize project cache for fast publishing
+# Source hosting functions first
+source "$(dirname "${BASH_SOURCE[0]}")/hosting-project.sh"
+echo "🔧 Initializing project cache for fast publishing..."
+init_project_cache "$PROJECTS_DIR/$PROJECT_NAME"
+
 # Reload systemd daemon to pick up new service template instance
 echo "🔧 Reloading systemd daemon..."
 if systemctl daemon-reload 2>/dev/null; then
