@@ -155,33 +155,6 @@ cat >> "$PROJECT_PATH/.agent/publish-prompt.md" << EOF
 4. **Publish to web** at: http://${DEPLOYMENT_IP:-127.0.0.1}/web/${ORG_NAME}/${PROJECT_NAME}/
 5. **Ensure both URLs work**: Git and Web access
 EOF
-- **Git URL**: http://${DEPLOYMENT_IP:-127.0.0.1}/git/$ORG_NAME/$PROJECT_NAME
-- **Web URL**: http://${DEPLOYMENT_IP:-127.0.0.1}/web/$ORG_NAME/$PROJECT_NAME
-- **Project Type**: $(detect_project_type "$PROJECT_PATH")
-- **Hosting Method**: Nginx reverse proxy configuration
-
-## Actions to Perform
-1. Create or update nginx configuration for this project
-2. Ensure nginx includes the project config
-3. Test nginx configuration
-4. Reload nginx if configuration is valid
-5. Set proper file permissions for web access
-6. Verify web hosting setup
-
-## Context Files
-- Use any existing project files in this directory
-- Check .git/config for remote URL if needed
-- Use nginx configuration templates if available
-
-## Expected Output
-Provide a clear summary of:
-- What nginx configuration was created/updated
-- The final URLs where the project is hosted
-- Any permissions or issues that needed fixing
-- Confirmation that web hosting is working
-
-Begin the intelligent publishing process now.
-EOF
 
 # Start AI agent publishing process
 echo "🚀 Starting AI agent publishing process..."
