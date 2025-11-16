@@ -124,7 +124,7 @@ fi
 
 # Use publish prompt template
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TEMPLATE_DIR="$SCRIPT_DIR/../templates/generic"
+TEMPLATE_DIR="$SCRIPT_DIR/../generic"
 
 # Create directory for agent files
 mkdir -p "$PROJECT_PATH/.agent"
