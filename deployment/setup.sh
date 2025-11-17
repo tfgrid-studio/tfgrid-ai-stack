@@ -225,11 +225,17 @@ chown -R gitea:gitea /etc/gitea /var/lib/gitea /var/log/gitea
 # Create Gitea configuration for auto-setup
 echo "⚙️ Creating Gitea configuration..."
 
-# Determine ROOT_URL based on available IPs - must match reverse proxy path
+# Determine ROOT_URL based on network preference - must match reverse proxy path
+# Primary IP might not be available yet during setup, so we'll update later if needed
 ROOT_URL="http://localhost/git/"
 if [ -n "${PRIMARY_IP:-}" ]; then
     ROOT_URL="http://${PRIMARY_IP}/git/"
 fi
+
+# Store network preference for post-deployment Gitea configuration
+DEPLOYMENT_ID="${DEPLOYMENT_ID:-unknown}"
+echo "mycelium_network_preference: ${DEPLOYMENT_NETWORK_PREFERENCE:-unknown}" > /opt/tfgrid-ai-stack/.gitea_network_config
+echo "deployment_id: ${DEPLOYMENT_ID}" >> /opt/tfgrid-ai-stack/.gitea_network_config
 
 cat > /etc/gitea/app.ini << EOF
 WORK_PATH = /var/lib/gitea

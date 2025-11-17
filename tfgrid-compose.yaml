@@ -18,7 +18,7 @@ hooks:
 hook_config:
   configure:
     optional: true
-    description: "SSL and domain configuration (skipped for private deployments)"
+    description: "SSL and domain configuration + network-aware service setup (skipped for private deployments)"
 
 # Single-VM pattern variables
 variables:
