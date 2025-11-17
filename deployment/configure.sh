@@ -8,47 +8,79 @@ echo "⚙️ Configuring tfgrid-ai-stack SSL and domain..."
 
 # Get appropriate VM IP based on network preference
 get_deployment_ip() {
+    echo "🔍 Debug: Starting IP detection..." >&2
+
     # Read network preference from config file
     local network_preference="wireguard"
+    echo "🔍 Debug: Checking network config file: /opt/tfgrid-ai-stack/.gitea_network_config" >&2
     if [ -f "/opt/tfgrid-ai-stack/.gitea_network_config" ]; then
+        echo "🔍 Debug: Config file exists, reading preference..." >&2
         local net_pref_from_file=$(grep "^mycelium_network_preference:" /opt/tfgrid-ai-stack/.gitea_network_config | cut -d':' -f2 | tr -d ' ')
+        echo "🔍 Debug: Raw preference value: '$net_pref_from_file'" >&2
         if [ -n "$net_pref_from_file" ] && [ "$net_pref_from_file" != "unknown" ]; then
             network_preference="$net_pref_from_file"
         fi
+    else
+        echo "🔍 Debug: Config file does not exist!" >&2
     fi
+    echo "🔍 Debug: Final network preference: $network_preference" >&2
 
     # Choose IP from state.yaml based on preference
     if [ "$network_preference" = "mycelium" ]; then
+        echo "🔍 Debug: Looking for mycelium IP..." >&2
         local myc_ip=""
         # Try both state file locations
         if [ -f "/tmp/app-deployment/state.yaml" ]; then
+            echo "🔍 Debug: Checking /tmp/app-deployment/state.yaml for mycelium_ip..." >&2
             myc_ip=$(grep "^mycelium_ip:" /tmp/app-deployment/state.yaml 2>/dev/null | awk '{print $2}')
+            echo "🔍 Debug: Found mycelium_ip in app-deployment/state.yaml: '$myc_ip'" >&2
         fi
         if [ -z "$myc_ip" ] && [ -f "/tmp/app-deployment/../state.yaml" ]; then
+            echo "🔍 Debug: Checking /tmp/app-deployment/../state.yaml for mycelium_ip..." >&2
             myc_ip=$(grep "^mycelium_ip:" /tmp/app-deployment/../state.yaml 2>/dev/null | awk '{print $2}')
+            echo "🔍 Debug: Found mycelium_ip in parent state.yaml: '$myc_ip'" >&2
         fi
         if [ -n "$myc_ip" ]; then
+            echo "🔍 Debug: Using mycelium IP: $myc_ip" >&2
             echo "$myc_ip"
             return 0
+        else
+            echo "🔍 Debug: No mycelium IP found in state files" >&2
         fi
     fi
 
     # Default to wireguard IP from state.yaml
+    echo "🔍 Debug: Looking for wireguard (vm_ip)..." >&2
     local vm_ip=""
     if [ -f "/tmp/app-deployment/state.yaml" ]; then
+        echo "🔍 Debug: Checking /tmp/app-deployment/state.yaml for vm_ip..." >&2
         vm_ip=$(grep "^vm_ip:" /tmp/app-deployment/state.yaml 2>/dev/null | awk '{print $2}')
+        echo "🔍 Debug: Found vm_ip in app-deployment/state.yaml: '$vm_ip'" >&2
     fi
     if [ -z "$vm_ip" ] && [ -f "/tmp/app-deployment/../state.yaml" ]; then
+        echo "🔍 Debug: Checking /tmp/app-deployment/../state.yaml for vm_ip..." >&2
         vm_ip=$(grep "^vm_ip:" /tmp/app-deployment/../state.yaml 2>/dev/null | awk '{print $2}')
+        echo "🔍 Debug: Found vm_ip in parent state.yaml: '$vm_ip'" >&2
     fi
+
+    if [ -n "$vm_ip" ]; then
+        echo "🔍 Debug: Using wireguard IP: $vm_ip" >&2
+    else
+        echo "🔍 Debug: No IP found in any state file!" >&2
+    fi
+
     echo "$vm_ip"
 }
 
 # Get VM IP using network-aware selection
 VM_IP="${PRIMARY_IP}"
 if [ -z "$VM_IP" ]; then
+    echo "🔍 Debug: PRIMARY_IP is empty, calling get_deployment_ip()" >&2
     VM_IP=$(get_deployment_ip)
+else
+    echo "🔍 Debug: Using PRIMARY_IP: $VM_IP" >&2
 fi
+echo "🔍 Debug: Final VM_IP: '$VM_IP'" >&2
 
 # Configure Gitea with network-aware ROOT_URL
 echo "🌐 Configuring Gitea for network preference..."
