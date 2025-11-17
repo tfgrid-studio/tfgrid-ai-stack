@@ -187,25 +187,30 @@ echo "🏗️ Preparing AI agent context..."
 # Create AI agent context for publishing
 cd "$PROJECT_PATH"
 
-# Get deployment IP dynamically (like other scripts)
-if [ -n "${PRIMARY_IP:-}" ]; then
-    DEPLOYMENT_IP="${PRIMARY_IP}"
-elif [ -n "${TFGRID_WIREGUARD_IP:-}" ]; then
-    DEPLOYMENT_IP="${TFGRID_WIREGUARD_IP}"
-else
-    # Try to get from state file with fallback to vm_ip
-    if [ -f "/tmp/app-deployment/state.yaml" ]; then
-        DEPLOYMENT_IP=$(grep "^primary_ip:" /tmp/app-deployment/state.yaml 2>/dev/null | awk '{print $2}')
-        # Fallback to vm_ip if primary_ip not found
-        if [ -z "$DEPLOYMENT_IP" ]; then
-            DEPLOYMENT_IP=$(grep "^vm_ip:" /tmp/app-deployment/state.yaml 2>/dev/null | awk '{print $2}')
+# Use network-aware IP resolution that respects global network preferences
+DEPLOYMENT_IP=$(get_deployment_ip "publisher" 2>/dev/null || echo "")
+
+# If network-aware resolution fails, fall back to hardcoded methods
+if [ -z "$DEPLOYMENT_IP" ]; then
+    if [ -n "${PRIMARY_IP:-}" ]; then
+        DEPLOYMENT_IP="${PRIMARY_IP}"
+    elif [ -n "${TFGRID_WIREGUARD_IP:-}" ]; then
+        DEPLOYMENT_IP="${TFGRID_WIREGUARD_IP}"
+    else
+        # Try to get from state file with fallback to vm_ip
+        if [ -f "/tmp/app-deployment/state.yaml" ]; then
+            DEPLOYMENT_IP=$(grep "^primary_ip:" /tmp/app-deployment/state.yaml 2>/dev/null | awk '{print $2}')
+            # Fallback to vm_ip if primary_ip not found
+            if [ -z "$DEPLOYMENT_IP" ]; then
+                DEPLOYMENT_IP=$(grep "^vm_ip:" /tmp/app-deployment/state.yaml 2>/dev/null | awk '{print $2}')
+            fi
         fi
-    fi
-    if [ -z "$DEPLOYMENT_IP" ] && [ -f "/tmp/app-deployment/../state.yaml" ]; then
-        DEPLOYMENT_IP=$(grep "^primary_ip:" /tmp/app-deployment/../state.yaml 2>/dev/null | awk '{print $2}')
-        # Fallback to vm_ip if primary_ip not found
-        if [ -z "$DEPLOYMENT_IP" ]; then
-            DEPLOYMENT_IP=$(grep "^vm_ip:" /tmp/app-deployment/../state.yaml 2>/dev/null | awk '{print $2}')
+        if [ -z "$DEPLOYMENT_IP" ] && [ -f "/tmp/app-deployment/../state.yaml" ]; then
+            DEPLOYMENT_IP=$(grep "^primary_ip:" /tmp/app-deployment/../state.yaml 2>/dev/null | awk '{print $2}')
+            # Fallback to vm_ip if primary_ip not found
+            if [ -z "$DEPLOYMENT_IP" ]; then
+                DEPLOYMENT_IP=$(grep "^vm_ip:" /tmp/app-deployment/../state.yaml 2>/dev/null | awk '{print $2}')
+            fi
         fi
     fi
 fi
