@@ -193,12 +193,20 @@ if [ -n "${PRIMARY_IP:-}" ]; then
 elif [ -n "${TFGRID_WIREGUARD_IP:-}" ]; then
     DEPLOYMENT_IP="${TFGRID_WIREGUARD_IP}"
 else
-    # Try to get from state file if available
+    # Try to get from state file with fallback to vm_ip
     if [ -f "/tmp/app-deployment/state.yaml" ]; then
         DEPLOYMENT_IP=$(grep "^primary_ip:" /tmp/app-deployment/state.yaml 2>/dev/null | awk '{print $2}')
+        # Fallback to vm_ip if primary_ip not found
+        if [ -z "$DEPLOYMENT_IP" ]; then
+            DEPLOYMENT_IP=$(grep "^vm_ip:" /tmp/app-deployment/state.yaml 2>/dev/null | awk '{print $2}')
+        fi
     fi
     if [ -z "$DEPLOYMENT_IP" ] && [ -f "/tmp/app-deployment/../state.yaml" ]; then
         DEPLOYMENT_IP=$(grep "^primary_ip:" /tmp/app-deployment/../state.yaml 2>/dev/null | awk '{print $2}')
+        # Fallback to vm_ip if primary_ip not found
+        if [ -z "$DEPLOYMENT_IP" ]; then
+            DEPLOYMENT_IP=$(grep "^vm_ip:" /tmp/app-deployment/../state.yaml 2>/dev/null | awk '{print $2}')
+        fi
     fi
 fi
 

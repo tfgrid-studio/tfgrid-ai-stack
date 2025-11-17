@@ -9,12 +9,20 @@ echo "⚙️ Configuring tfgrid-ai-stack SSL and domain..."
 # Get VM IP from environment or try to detect it
 VM_IP="${PRIMARY_IP}"
 if [ -z "$VM_IP" ]; then
-    # Try to get from state file if available
+    # Try to get from state file with fallback to vm_ip
     if [ -f "/tmp/app-deployment/state.yaml" ]; then
         VM_IP=$(grep "^primary_ip:" /tmp/app-deployment/state.yaml 2>/dev/null | awk '{print $2}')
+        # Fallback to vm_ip if primary_ip not found
+        if [ -z "$VM_IP" ]; then
+            VM_IP=$(grep "^vm_ip:" /tmp/app-deployment/state.yaml 2>/dev/null | awk '{print $2}')
+        fi
     fi
     if [ -z "$VM_IP" ] && [ -f "/tmp/app-deployment/../state.yaml" ]; then
         VM_IP=$(grep "^primary_ip:" /tmp/app-deployment/../state.yaml 2>/dev/null | awk '{print $2}')
+        # Fallback to vm_ip if primary_ip not found
+        if [ -z "$VM_IP" ]; then
+            VM_IP=$(grep "^vm_ip:" /tmp/app-deployment/../state.yaml 2>/dev/null | awk '{print $2}')
+        fi
     fi
 fi
 
