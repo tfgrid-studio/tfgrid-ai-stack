@@ -6,57 +6,25 @@ set -e
 
 echo "🏥 Running health checks for tfgrid-ai-stack services..."
 
-# Get appropriate VM IP based on network preference (consistent with configure.sh)
-get_deployment_ip() {
-    # Read network preference from config file
-    local network_preference="wireguard"
-    if [ -f "/opt/tfgrid-ai-stack/.gitea_network_config" ]; then
-        local net_pref_from_file=$(grep "^mycelium_network_preference:" /opt/tfgrid-ai-stack/.gitea_network_config | cut -d':' -f2 | tr -d ' ')
-        if [ -n "$net_pref_from_file" ] && [ "$net_pref_from_file" != "unknown" ]; then
-            network_preference="$net_pref_from_file"
-        fi
-    fi
-
-    # Choose IP from state.yaml based on preference
-    if [ "$network_preference" = "mycelium" ]; then
-        local myc_ip=""
-        # Try both state file locations
-        if [ -f "/tmp/app-deployment/state.yaml" ]; then
-            myc_ip=$(grep "^mycelium_ip:" /tmp/app-deployment/state.yaml 2>/dev/null | awk '{print $2}')
-        fi
-        if [ -z "$myc_ip" ] && [ -f "/tmp/app-deployment/../state.yaml" ]; then
-            myc_ip=$(grep "^mycelium_ip:" /tmp/app-deployment/../state.yaml 2>/dev/null | awk '{print $2}')
-        fi
-        if [ -n "$myc_ip" ]; then
-            echo "$myc_ip"
-            return 0
-        fi
-    fi
-
-    # Default to wireguard IP from state.yaml
-    local vm_ip=""
-    if [ -f "/tmp/app-deployment/state.yaml" ]; then
-        vm_ip=$(grep "^vm_ip:" /tmp/app-deployment/state.yaml 2>/dev/null | awk '{print $2}')
-    fi
-    if [ -z "$vm_ip" ] && [ -f "/tmp/app-deployment/../state.yaml" ]; then
-        vm_ip=$(grep "^vm_ip:" /tmp/app-deployment/../state.yaml 2>/dev/null | awk '{print $2}')
-    fi
-    echo "$vm_ip"
-}
+# Source shared network helper for VM IP resolution (consistent with configure.sh)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR/../scripts/network-helper.sh" ]; then
+	source "$SCRIPT_DIR/../scripts/network-helper.sh"
+fi
 
 # Get VM IP (try multiple methods)
 VM_IP=""
 if [ -n "$PRIMARY_IP" ]; then
-    VM_IP="$PRIMARY_IP"
+	VM_IP="$PRIMARY_IP"
 elif [ -n "$primary_ip" ]; then
-    VM_IP="$primary_ip"
+	VM_IP="$primary_ip"
 else
-    # Use network-aware IP detection
-    VM_IP=$(get_deployment_ip)
-    # Fallback to local IP if network detection fails
-    if [ -z "$VM_IP" ]; then
-        VM_IP=$(hostname -I | awk '{print $1}' 2>/dev/null || echo "127.0.0.1")
-    fi
+	# Use network-aware IP detection
+	VM_IP=$(get_deployment_ip_vm)
+	# Fallback to local IP if network detection fails
+	if [ -z "$VM_IP" ]; then
+		VM_IP=$(hostname -I | awk '{print $1}' 2>/dev/null || echo "127.0.0.1")
+	fi
 fi
 
 echo "Using VM_IP: $VM_IP"

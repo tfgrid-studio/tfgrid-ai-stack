@@ -9,6 +9,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/common-project.sh"
 source "$SCRIPT_DIR/hosting-project.sh"
 
+# Source shared network helper (on the VM) for deployment IP resolution
+if [ -f "$SCRIPT_DIR/network-helper.sh" ]; then
+	source "$SCRIPT_DIR/network-helper.sh"
+fi
+
 # Add usage for force refresh option
 show_usage() {
     echo "Usage: $0 [project-name] [--force]"
@@ -187,8 +192,8 @@ echo "🏗️ Preparing AI agent context..."
 # Create AI agent context for publishing
 cd "$PROJECT_PATH"
 
-# Use network-aware IP resolution that respects global network preferences
-DEPLOYMENT_IP=$(get_deployment_ip "publisher" 2>/dev/null || echo "")
+# Use network-aware IP resolution on the VM (WireGuard vs Mycelium)
+DEPLOYMENT_IP=$(get_deployment_ip_vm 2>/dev/null || echo "")
 
 # If network-aware resolution fails, fall back to hardcoded methods
 if [ -z "$DEPLOYMENT_IP" ]; then
