@@ -145,7 +145,11 @@ echo ""
 
 # Check cache validity
 echo "🔍 Checking project cache..."
-CACHE_VALID=$(is_cache_valid "$PROJECT_PATH" "$FORCE_REFRESH")
+# Use if/else so is_cache_valid's non-zero return doesn't trigger set -e
+CACHE_VALID="1"
+if is_cache_valid "$PROJECT_PATH" "$FORCE_REFRESH"; then
+    CACHE_VALID="0"
+fi
 
 if [ "$CACHE_VALID" = "0" ]; then
     echo "✅ Project cache is valid - using cached metadata"

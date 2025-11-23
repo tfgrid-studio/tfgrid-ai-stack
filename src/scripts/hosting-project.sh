@@ -236,7 +236,7 @@ init_project_cache() {
     local organization=$(get_project_org "$project_path")
     local git_hash=$(cd "$project_path" && git rev-parse HEAD 2>/dev/null || echo "unknown")
     local file_count=$(find "$project_path/src" -type f 2>/dev/null | wc -l || echo "0")
-    local analysis_time=$(date -u +%Y-%m-%dT%H:%M:%SZ +%3N)
+    local analysis_time=$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)
 
     # Create cache structure
     cat > "$cache_file" << EOF
@@ -340,7 +340,7 @@ update_cache_after_publish() {
     fi
 
     # Update publish metadata
-    local publish_time=$(date -u +%Y-%m-%dT%H:%M:%SZ +%3N)
+    local publish_time=$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)
     local current_count=$(yq eval '.hosting.publish_count // 0' "$cache_file" 2>/dev/null || echo "0")
     local new_count=$((current_count + 1))
 
