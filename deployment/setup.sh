@@ -726,6 +726,7 @@ echo "🌐 Configuring Nginx reverse proxy..."
 cat > /etc/nginx/sites-available/ai-stack << 'NGINXEOL'
 server {
     listen 80;
+    listen [::]:80;
     server_name _;
 
     # Gitea routing
