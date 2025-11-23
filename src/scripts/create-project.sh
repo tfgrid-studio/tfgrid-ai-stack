@@ -567,11 +567,15 @@ if [ -f "$CONFIG_FILE" ]; then
         }")
 
     if echo "$REPO_RESPONSE" | jq -e '.id' >/dev/null 2>&1; then
-        REPO_URL="$GITEA_URL/$DEFAULT_ORG/$PROJECT_NAME.git"
-        echo "  ✅ Repository created: $REPO_URL"
+        # External URL (for browser/clients) uses the configured Gitea URL
+        EXTERNAL_REPO_URL="$GITEA_URL/$DEFAULT_ORG/$PROJECT_NAME.git"
+        # Internal URL (for pushes from inside the VM) should always use localhost
+        LOCAL_REPO_URL="http://localhost:3000/$DEFAULT_ORG/$PROJECT_NAME.git"
 
-        # Add Gitea as remote
-        git remote add origin "$REPO_URL"
+        echo "  ✅ Repository created: $EXTERNAL_REPO_URL"
+
+        # Add Gitea as remote (always use localhost inside VM for git pushes)
+        git remote add origin "$LOCAL_REPO_URL"
 
         # Configure credentials for both root (current user) and developer user
         git config credential.helper store
@@ -595,7 +599,7 @@ if [ -f "$CONFIG_FILE" ]; then
         mkdir -p .agent
         cat > .agent/gitea.json << EOF
 {
-    "repo_url": "$REPO_URL",
+    "repo_url": "$EXTERNAL_REPO_URL",
     "web_url": "$GITEA_URL/$DEFAULT_ORG/$PROJECT_NAME",
     "organization": "$DEFAULT_ORG",
     "created": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
