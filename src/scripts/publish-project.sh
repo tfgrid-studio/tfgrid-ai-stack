@@ -160,6 +160,11 @@ if [ "$CACHE_VALID" = "0" ]; then
     HOSTABLE=$(get_cached_metadata "$PROJECT_PATH" ".hosting.hostable")
     STRATEGY=$(get_cached_metadata "$PROJECT_PATH" ".hosting.strategy")
 
+    # Normalize organization name (avoid placeholder 'default')
+    if [ -z "$ORG_NAME" ] || [ "$ORG_NAME" = "default" ]; then
+        ORG_NAME="tfgrid-ai-agent"
+    fi
+
     echo "🏢 Organization: $ORG_NAME"
     echo "🔧 Type: $PROJECT_TYPE"
     echo "🎯 Strategy: $STRATEGY"
@@ -173,6 +178,11 @@ else
     # Get fresh data
     ORG_NAME=$(get_project_org "$PROJECT_PATH")
     PROJECT_TYPE=$(detect_project_type "$PROJECT_PATH")
+
+    # Normalize organization name (avoid placeholder 'default')
+    if [ -z "$ORG_NAME" ] || [ "$ORG_NAME" = "default" ]; then
+        ORG_NAME="tfgrid-ai-agent"
+    fi
 
     echo "🏢 Organization: $ORG_NAME"
     echo "🔧 Type: $PROJECT_TYPE"
@@ -228,6 +238,15 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEMPLATE_DIR="$SCRIPT_DIR/../generic"
 
+# Normalize deployment IP for URLs (wrap IPv6 in brackets)
+URL_IP="$DEPLOYMENT_IP"
+if [ -z "$URL_IP" ]; then
+    URL_IP="127.0.0.1"
+fi
+if [[ "$URL_IP" == *:* && "$URL_IP" != \[*\] ]]; then
+    URL_IP="[$URL_IP]"
+fi
+
 # Create directory for agent files
 mkdir -p "$PROJECT_PATH/.agent"
 
@@ -258,12 +277,12 @@ if [ "$CACHE_VALID" = "0" ]; then
 - **Nginx configuration**: Static file serving from /web/$ORG_NAME/$PROJECT_NAME/
 
 ### Dynamic Deployment Context
-- **Deployment IP**: ${DEPLOYMENT_IP:-127.0.0.1}
-- **GIT_BASE_URL**: http://${DEPLOYMENT_IP:-127.0.0.1}/git
-- **WEB_BASE_URL**: http://${DEPLOYMENT_IP:-127.0.0.1}
+- **Deployment IP**: $URL_IP
+- **GIT_BASE_URL**: http://$URL_IP/git
+- **WEB_BASE_URL**: http://$URL_IP
 - **Project Path**: ${ORG_NAME}/${PROJECT_NAME}
-- **Full Git URL**: http://${DEPLOYMENT_IP:-127.0.0.1}/git/${ORG_NAME}/${PROJECT_NAME}
-- **Full Web URL**: http://${DEPLOYMENT_IP:-127.0.0.1}/web/${ORG_NAME}/${PROJECT_NAME}/
+- **Full Git URL**: http://$URL_IP/git/${ORG_NAME}/${PROJECT_NAME}
+- **Full Web URL**: http://$URL_IP/web/${ORG_NAME}/${PROJECT_NAME}/
 
 ## IMPORTANT: Fast Publish Instructions
 
@@ -276,10 +295,10 @@ Since this project has been analyzed before and nothing has changed, you can:
 
 ## Your FAST Mission (Incremental Publish)
 
-1. **Verify Git repository exists** (quick check): http://${DEPLOYMENT_IP:-127.0.0.1}/git/${ORG_NAME}/${PROJECT_NAME}
+1. **Verify Git repository exists** (quick check): http://$URL_IP/git/${ORG_NAME}/${PROJECT_NAME}
 2. **Copy project files** from: $PROJECT_PATH/src/ to web hosting directory
 3. **Set proper permissions** for web serving (644 files, 755 directories)
-4. **Test web access** at: http://${DEPLOYMENT_IP:-127.0.0.1}/web/${ORG_NAME}/${PROJECT_NAME}/
+4. **Test web access** at: http://$URL_IP/web/${ORG_NAME}/${PROJECT_NAME}/
 
 **NO need for full project analysis - use cached data!**
 EOF
@@ -295,12 +314,12 @@ else
     cat >> "$PROJECT_PATH/.agent/publish-prompt.md" << EOF
 
 ## Dynamic Deployment Context
-- **Deployment IP**: ${DEPLOYMENT_IP:-127.0.0.1}
-- **GIT_BASE_URL**: http://${DEPLOYMENT_IP:-127.0.0.1}/git
-- **WEB_BASE_URL**: http://${DEPLOYMENT_IP:-127.0.0.1}
+- **Deployment IP**: $URL_IP
+- **GIT_BASE_URL**: http://$URL_IP/git
+- **WEB_BASE_URL**: http://$URL_IP
 - **Project Path**: ${ORG_NAME}/${PROJECT_NAME}
-- **Full Git URL**: http://${DEPLOYMENT_IP:-127.0.0.1}/git/${ORG_NAME}/${PROJECT_NAME}
-- **Full Web URL**: http://${DEPLOYMENT_IP:-127.0.0.1}/web/${ORG_NAME}/${PROJECT_NAME}/
+- **Full Git URL**: http://$URL_IP/git/${ORG_NAME}/${PROJECT_NAME}
+- **Full Web URL**: http://$URL_IP/web/${ORG_NAME}/${PROJECT_NAME}/
 
 ## Project Context
 - **Project Name**: $PROJECT_NAME
@@ -309,10 +328,10 @@ else
 
 ## Your FULL Mission (Fresh Analysis)
 
-1. **Check the Git repository** at: http://${DEPLOYMENT_IP:-127.0.0.1}/git/${ORG_NAME}/${PROJECT_NAME}
+1. **Check the Git repository** at: http://$URL_IP/git/${ORG_NAME}/${PROJECT_NAME}
 2. **Analyze the project** to determine hosting strategy
 3. **Fetch project files** from the git repository
-4. **Publish to web** at: http://${DEPLOYMENT_IP:-127.0.0.1}/web/${ORG_NAME}/${PROJECT_NAME}/
+4. **Publish to web** at: http://$URL_IP/web/${ORG_NAME}/${PROJECT_NAME}/
 5. **Ensure both URLs work**: Git and Web access
 EOF
 
@@ -386,8 +405,8 @@ else
 fi
 
 echo "✅ Web hosting directory structure prepared"
-echo "   Project will be available at: http://${DEPLOYMENT_IP}/web/$REAL_ORG/$PROJECT_NAME/"
-echo "   Gitea is still accessible at: http://${DEPLOYMENT_IP}/git/"
+echo "   Project will be available at: http://$URL_IP/web/$REAL_ORG/$PROJECT_NAME/"
+echo "   Gitea is still accessible at: http://$URL_IP/git/"
 
 echo ""
 echo "🎉 AI Agent publishing process completed!"
@@ -396,6 +415,6 @@ echo ""
 update_cache_after_publish "$PROJECT_PATH" "$DEPLOYMENT_IP"
 
 echo "🌐 Your project should now be accessible at:"
-echo "   Git:  http://${DEPLOYMENT_IP}/git/$REAL_ORG/$PROJECT_NAME"
-echo "   Web:  http://${DEPLOYMENT_IP}/web/$REAL_ORG/$PROJECT_NAME"
+echo "   Git:  http://$URL_IP/git/$REAL_ORG/$PROJECT_NAME"
+echo "   Web:  http://$URL_IP/web/$REAL_ORG/$PROJECT_NAME"
 echo ""

@@ -748,9 +748,11 @@ server {
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
     }
-# Web hosting for published projects
+
+    # Web hosting for published projects
+    # Maps /web/<org>/<project>/ to /home/developer/code/tfgrid-ai-stack-projects/<org>/<project>/
     location /web/ {
-        root /home/developer/code/tfgrid-ai-stack-projects;
+        alias /home/developer/code/tfgrid-ai-stack-projects/;
         try_files $uri $uri/ =404;
         autoindex on;
         autoindex_exact_size off;
