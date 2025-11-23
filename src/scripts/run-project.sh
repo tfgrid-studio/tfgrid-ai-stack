@@ -8,7 +8,35 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/common-project.sh"
 
-PROJECT_NAME="$1"
+PROJECT_NAME=""
+WAIT_FOR_COMPLETION=false
+
+# Parse arguments: [project-name] [--wait]
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --wait)
+            WAIT_FOR_COMPLETION=true
+            shift
+            ;;
+        --help|-h)
+            echo "Usage: $0 [project-name] [--wait]"
+            exit 0
+            ;;
+        --*)
+            echo "❌ Unknown option: $1" >&2
+            exit 1
+            ;;
+        *)
+            if [ -z "$PROJECT_NAME" ]; then
+                PROJECT_NAME="$1"
+            else
+                echo "❌ Unexpected argument: $1" >&2
+                exit 1
+            fi
+            shift
+            ;;
+    esac
+done
 
 # If no argument, try to get from context
 if [ -z "$PROJECT_NAME" ]; then
@@ -77,6 +105,22 @@ if systemctl start "tfgrid-ai-project@${PROJECT_NAME}.service"; then
 else
     echo "❌ Failed to start AI agent service"
     exit 1
+fi
+
+# Optionally wait until the agent loop completes (service stops)
+if [ "$WAIT_FOR_COMPLETION" = "true" ]; then
+    PROJECT_PATH=$(find_project_path "$PROJECT_NAME")
+    if [ -z "$PROJECT_PATH" ]; then
+        echo "❌ Error: Project '$PROJECT_NAME' not found while waiting for completion"
+        exit 1
+    fi
+
+    echo "⏳ Waiting for AI agent loop to complete for project: $PROJECT_NAME"
+    # Poll service status until it is no longer active
+    while systemctl is-active --quiet "tfgrid-ai-project@${PROJECT_NAME}.service"; do
+        sleep 5
+    done
+    echo "✅ AI agent loop completed for project: $PROJECT_NAME"
 fi
 
 echo "🔍 Project: $PROJECT_NAME"

@@ -16,6 +16,151 @@ if ! command -v qwen &> /dev/null; then
     exit 1
 fi
 
+###############################
+# CLI argument parsing
+###############################
+
+PROJECT_NAME="${PROJECT_NAME:-}"
+TIME_DURATION="${TIME_DURATION:-}"
+PROMPT_TYPE="${PROMPT_TYPE:-}"
+CUSTOM_PROMPT="${CUSTOM_PROMPT:-}"
+PROJECT_TYPE="${PROJECT_TYPE:-}"
+GIT_USER_NAME_OVERRIDE="${GIT_USER_NAME_OVERRIDE:-}"
+GIT_USER_EMAIL_OVERRIDE="${GIT_USER_EMAIL_OVERRIDE:-}"
+AUTO_RUN="${AUTO_RUN:-0}"
+AUTO_PUBLISH="${AUTO_PUBLISH:-0}"
+TEMPLATE_NAME="${TEMPLATE_NAME:-}"
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --project)
+            PROJECT_NAME="$2"
+            shift 2
+            ;;
+        --project=*)
+            PROJECT_NAME="${1#--project=}"
+            shift
+            ;;
+        --time)
+            TIME_DURATION="$2"
+            shift 2
+            ;;
+        --time=*)
+            TIME_DURATION="${1#--time=}"
+            shift
+            ;;
+        --prompt)
+            CUSTOM_PROMPT="$2"
+            PROMPT_TYPE="1"
+            shift 2
+            ;;
+        --prompt=*)
+            CUSTOM_PROMPT="${1#--prompt=}"
+            PROMPT_TYPE="1"
+            shift
+            ;;
+        --template)
+            TEMPLATE_NAME="$2"
+            PROMPT_TYPE="2"
+            shift 2
+            ;;
+        --template=*)
+            TEMPLATE_NAME="${1#--template=}"
+            PROMPT_TYPE="2"
+            shift
+            ;;
+        --git-name)
+            GIT_USER_NAME_OVERRIDE="$2"
+            shift 2
+            ;;
+        --git-name=*)
+            GIT_USER_NAME_OVERRIDE="${1#--git-name=}"
+            shift
+            ;;
+        --git-email)
+            GIT_USER_EMAIL_OVERRIDE="$2"
+            shift 2
+            ;;
+        --git-email=*)
+            GIT_USER_EMAIL_OVERRIDE="${1#--git-email=}"
+            shift
+            ;;
+        --run)
+            val="$2"
+            case "$val" in
+                yes|true|1) AUTO_RUN=1 ;;
+                no|false|0) AUTO_RUN=0 ;;
+                *) echo "❌ Invalid value for --run: $val"; exit 1 ;;
+            esac
+            shift 2
+            ;;
+        --run=*)
+            val="${1#--run=}"
+            case "$val" in
+                yes|true|1) AUTO_RUN=1 ;;
+                no|false|0) AUTO_RUN=0 ;;
+                *) echo "❌ Invalid value for --run: $val"; exit 1 ;;
+            esac
+            shift
+            ;;
+        --publish)
+            val="$2"
+            case "$val" in
+                yes|true|1) AUTO_PUBLISH=1 ;;
+                no|false|0) AUTO_PUBLISH=0 ;;
+                *) echo "❌ Invalid value for --publish: $val"; exit 1 ;;
+            esac
+            shift 2
+            ;;
+        --publish=*)
+            val="${1#--publish=}"
+            case "$val" in
+                yes|true|1) AUTO_PUBLISH=1 ;;
+                no|false|0) AUTO_PUBLISH=0 ;;
+                *) echo "❌ Invalid value for --publish: $val"; exit 1 ;;
+            esac
+            shift
+            ;;
+        --non-interactive|-n)
+            NON_INTERACTIVE=1
+            shift
+            ;;
+        --help|-h)
+            echo "Usage: $0 [--project NAME] [--time DURATION] [--prompt TEXT|--template NAME] [--git-name NAME] [--git-email EMAIL] [--run yes|no] [--publish yes|no] [--non-interactive]"
+            exit 0
+            ;;
+        --*)
+            echo "❌ Unknown option: $1"
+            exit 1
+            ;;
+        *)
+            # First bare argument is project name (for backwards compatibility)
+            if [ -z "$PROJECT_NAME" ]; then
+                PROJECT_NAME="$1"
+            fi
+            # Ignore additional positional args (e.g. description)
+            shift
+            ;;
+    esac
+done
+
+# Map template name to numeric PROJECT_TYPE if provided
+if [ -n "$TEMPLATE_NAME" ]; then
+    case "$TEMPLATE_NAME" in
+        porting) PROJECT_TYPE="1" ;;
+        translation) PROJECT_TYPE="2" ;;
+        editing) PROJECT_TYPE="3" ;;
+        copywriting) PROJECT_TYPE="4" ;;
+        website) PROJECT_TYPE="5" ;;
+        other) PROJECT_TYPE="6" ;;
+        *)
+            echo "❌ Invalid template name: $TEMPLATE_NAME"
+            echo "   Valid: porting, translation, editing, copywriting, website, other"
+            exit 1
+            ;;
+    esac
+fi
+
 # Detect mode
 if [ "${NON_INTERACTIVE:-0}" = "1" ]; then
     # Non-interactive mode - validate required env vars
@@ -216,6 +361,14 @@ elif [ -z "$GIT_USER_NAME" ]; then
     # Non-interactive mode: use default if not configured
     git config user.name "AI Agent"
     git config user.email "ai-agent@localhost"
+fi
+
+# Apply explicit git identity overrides for this project if provided
+if [ -n "$GIT_USER_NAME_OVERRIDE" ]; then
+    git config user.name "$GIT_USER_NAME_OVERRIDE"
+fi
+if [ -n "$GIT_USER_EMAIL_OVERRIDE" ]; then
+    git config user.email "$GIT_USER_EMAIL_OVERRIDE"
 fi
 
 # Create basic directory structure
@@ -656,6 +809,32 @@ echo "Configuration:"
 echo "  - Time constraint: $TIME_TEXT"
 echo "  - Prompt: $([ "$PROMPT_TYPE" = "1" ] && echo "Custom" || echo "Generic template")"
 echo ""
+
+# Non-interactive automation: auto-run and/or auto-publish
+if [ "${NON_INTERACTIVE:-0}" = "1" ]; then
+    # Validate combinations
+    if [ "${AUTO_PUBLISH:-0}" = "1" ] && [ "${AUTO_RUN:-0}" != "1" ]; then
+        echo "❌ Error: Auto-publish requires auto-run in non-interactive mode (use --run yes --publish yes)"
+        exit 1
+    fi
+
+    RUN_SCRIPT="$(dirname "${BASH_SOURCE[0]}")/run-project.sh"
+    PUBLISH_SCRIPT="$(dirname "${BASH_SOURCE[0]}")/publish-project.sh"
+
+    if [ "${AUTO_RUN:-0}" = "1" ]; then
+        echo "🚀 Auto-starting AI agent for project '$PROJECT_NAME'..."
+        if [ "${AUTO_PUBLISH:-0}" = "1" ]; then
+            # Wait for the agent loop to complete before publishing
+            "$RUN_SCRIPT" "$PROJECT_NAME" --wait
+            echo "🌐 Auto-publishing project '$PROJECT_NAME'..."
+            "$PUBLISH_SCRIPT" "$PROJECT_NAME"
+        else
+            "$RUN_SCRIPT" "$PROJECT_NAME"
+        fi
+    fi
+
+    exit 0
+fi
 
 # Ask if user wants to start the AI agent now (unless skipped by caller or in non-interactive mode)
 if [ "${SKIP_AUTOSTART:-0}" != "1" ] && [ "${NON_INTERACTIVE:-0}" != "1" ]; then
