@@ -8,7 +8,9 @@ echo "🏥 Running health checks for tfgrid-ai-stack services..."
 
 # Source shared network helper for VM IP resolution (consistent with configure.sh)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if [ -f "$SCRIPT_DIR/../scripts/network-helper.sh" ]; then
+if [ -f "/opt/tfgrid-ai-stack/scripts/network-helper.sh" ]; then
+	source "/opt/tfgrid-ai-stack/scripts/network-helper.sh"
+elif [ -f "$SCRIPT_DIR/../scripts/network-helper.sh" ]; then
 	source "$SCRIPT_DIR/../scripts/network-helper.sh"
 fi
 
