@@ -51,6 +51,21 @@ apt-get install -y expect
 echo "📦 Installing jq..."
 apt-get install -y jq
 
+# Install yq (YAML processor) for project cache handling
+echo "📦 Installing yq (YAML processor)..."
+if ! command -v yq >/dev/null 2>&1; then
+    YQ_VERSION="v4.44.1"
+    YQ_BIN="/usr/local/bin/yq"
+    if curl -fsSL "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64" -o "$YQ_BIN"; then
+        chmod +x "$YQ_BIN"
+        echo "✅ yq installed at $YQ_BIN"
+    else
+        echo "⚠️  Failed to download yq; YAML cache features will be disabled until yq is installed"
+    fi
+else
+    echo "ℹ️  yq already installed"
+fi
+
 # Install at for async service management
 echo "📦 Installing at..."
 apt-get install -y at

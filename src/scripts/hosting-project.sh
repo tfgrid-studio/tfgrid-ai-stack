@@ -307,6 +307,11 @@ is_cache_valid() {
         return 1
     fi
 
+    # If yq is not available, treat cache as invalid so it will be regenerated
+    if ! command -v yq >/dev/null 2>&1; then
+        return 1
+    fi
+
     # Check if git hash changed
     local cached_hash=$(yq eval '.change_detection.git_hash // "unknown"' "$cache_file" 2>/dev/null || echo "unknown")
     local current_hash=$(cd "$project_path" && git rev-parse HEAD 2>/dev/null || echo "unknown")
@@ -336,7 +341,17 @@ update_cache_after_publish() {
 
     if [ ! -f "$cache_file" ]; then
         init_project_cache "$project_path"
-        return
+        # If yq is not available, we cannot update publish metadata but cache exists
+        if ! command -v yq >/dev/null 2>&1; then
+            echo "ℹ️  yq not available; initialized basic project cache without publish metadata"
+            return 0
+        fi
+    fi
+
+    # If yq is not available for an existing cache, skip publish metadata update gracefully
+    if ! command -v yq >/dev/null 2>&1; then
+        echo "ℹ️  yq not available; skipping publish metadata update in project cache"
+        return 0
     fi
 
     # Update publish metadata
@@ -358,6 +373,12 @@ get_cached_metadata() {
     local field_path="$2"
 
     local cache_file="$project_path/.agent/project-cache.yaml"
+
+    # If yq is not available, cached metadata cannot be read; return empty
+    if ! command -v yq >/dev/null 2>&1; then
+        echo ""
+        return 0
+    fi
 
     if [ -f "$cache_file" ]; then
         yq eval "$field_path" "$cache_file" 2>/dev/null || echo ""
