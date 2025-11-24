@@ -295,8 +295,12 @@ Since this project has been analyzed before and nothing has changed, you can:
 
 ## Your FAST Mission (Incremental Publish)
 
+Your goal is that visiting **http://$URL_IP/web/${ORG_NAME}/${PROJECT_NAME}/** shows the **completed project outcome** for a human user (website, report, book, travel plan, analysis, etc.), not raw source files.
+
 1. **Verify Git repository exists** (quick check): http://$URL_IP/git/${ORG_NAME}/${PROJECT_NAME}
-2. **Copy project files** from: $PROJECT_PATH/src/ to web hosting directory
+2. **Ensure the project outcome is published for end users**:
+   - If this is a web or front-end project, run the appropriate build and make sure the built site is available at that URL.
+   - If this is a non-web project (book, report, travel plan, analysis, etc.), generate a simple human-friendly entry point (for example an `index.html` or equivalent) at that URL that presents the final result and links to any supporting files.
 3. **Set proper permissions** for web serving (644 files, 755 directories)
 4. **Test web access** at: http://$URL_IP/web/${ORG_NAME}/${PROJECT_NAME}/
 
@@ -328,10 +332,12 @@ else
 
 ## Your FULL Mission (Fresh Analysis)
 
+Your goal is that visiting **http://$URL_IP/web/${ORG_NAME}/${PROJECT_NAME}/** shows the **completed project outcome** for a human user (website, report, book, travel plan, analysis, etc.), not raw source files or only a code tree.
+
 1. **Check the Git repository** at: http://$URL_IP/git/${ORG_NAME}/${PROJECT_NAME}
-2. **Analyze the project** to determine hosting strategy
+2. **Analyze the project** to determine hosting strategy and what the "end-user result" should look like.
 3. **Fetch project files** from the git repository
-4. **Publish to web** at: http://$URL_IP/web/${ORG_NAME}/${PROJECT_NAME}/
+4. **Publish the end-user result to the web** at: http://$URL_IP/web/${ORG_NAME}/${PROJECT_NAME}/ — this may mean building a site and placing the built output at that URL, or generating a simple entry page (for example an `index.html`) that presents the final result and links to any supporting artifacts.
 5. **Ensure both URLs work**: Git and Web access
 EOF
 
