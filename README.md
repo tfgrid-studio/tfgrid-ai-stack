@@ -153,6 +153,7 @@ This app is maintained by TFGrid Studio. It integrates components from:
 
 ## Support
 
-This is an official TFGrid Studio application. For support:
-- Documentation: https://docs.tfgrid.studio
-- Issues: https://github.com/tfgrid-studio/tfgrid-compose/issues
+- **📚 Documentation:** [docs.tfgrid.studio](https://docs.tfgrid.studio)
+- **🐛 Issues:** [GitHub Issues](https://github.com/tfgrid-studio/tfgrid-ai-stack/issues)
+- **💬 Discussions:** [GitHub Discussions](https://github.com/orgs/tfgrid-studio/discussions)
+- **📧 Contact:** [tfgrid.studio/contact](https://tfgrid.studio/contact)
