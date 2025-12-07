@@ -8,10 +8,10 @@ jobs:
   trigger:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger app-registry update
+      - name: Trigger tfgrid-registry update
         run: |
           curl -X POST \
             -H "Authorization: token ${{ secrets.REGISTRY_UPDATE_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
-            https://api.github.com/repos/tfgrid-studio/app-registry/dispatches \
+            https://api.github.com/repos/tfgrid-studio/tfgrid-registry/dispatches \
             -d '{"event_type": "app-updated", "client_payload": {"app": "${{ github.event.repository.name }}"}}'
