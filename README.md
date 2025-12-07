@@ -1,5 +1,9 @@
 # TFGrid AI Stack
 
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/tfgrid-studio/tfgrid-ai-stack)](https://github.com/tfgrid-studio/tfgrid-ai-stack/stargazers)
+[![GitHub issues](https://img.shields.io/github/issues/tfgrid-studio/tfgrid-ai-stack)](https://github.com/tfgrid-studio/tfgrid-ai-stack/issues)
+
 AI-powered development platform with integrated Git hosting and deployment.
 
 ## Overview
