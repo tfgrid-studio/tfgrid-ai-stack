@@ -23,7 +23,7 @@ fi
 # Configure Gitea with network-aware ROOT_URL
 echo "🌐 Configuring Gitea for network preference..."
 configure_gitea_for_network() {
-    local vm_ip="$1"
+    local ipv4_address="$1"
 
     # Get network preference - try environment variable first, then state file
     local network_preference="${NETWORK_PREFERENCE:-wireguard}"
@@ -35,16 +35,16 @@ configure_gitea_for_network() {
     fi
 
     echo "  Network preference: $network_preference"
-    echo "  VM IP: ${vm_ip}"
+    echo "  VM IP: ${ipv4_address}"
 
     # Determine ROOT_URL based on network preference
     local root_url=""
     if [ "$network_preference" = "mycelium" ]; then
         # Use mycelium IPv6 with brackets for URL
-        root_url="http://[${vm_ip}]/git/"
+        root_url="http://[${ipv4_address}]/git/"
     else
         # Use wireguard IPv4
-        root_url="http://${vm_ip}/git/"
+        root_url="http://${ipv4_address}/git/"
     fi
 
     echo "  Gitea ROOT_URL: $root_url"
@@ -59,9 +59,9 @@ configure_gitea_for_network() {
     if [ -f "/opt/tfgrid-ai-stack/config/gitea.json" ]; then
         local gitea_json_external_url=""
         if [ "$network_preference" = "mycelium" ]; then
-            gitea_json_external_url="http://[${vm_ip}]:3000"
+            gitea_json_external_url="http://[${ipv4_address}]:3000"
         else
-            gitea_json_external_url="http://${vm_ip}:3000"
+            gitea_json_external_url="http://${ipv4_address}:3000"
         fi
 
         # Use jq if available, otherwise sed

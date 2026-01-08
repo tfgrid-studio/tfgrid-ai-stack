@@ -216,19 +216,19 @@ if [ -z "$DEPLOYMENT_IP" ]; then
     elif [ -n "${TFGRID_WIREGUARD_IP:-}" ]; then
         DEPLOYMENT_IP="${TFGRID_WIREGUARD_IP}"
     else
-        # Try to get from state file with fallback to vm_ip
+        # Try to get from state file with fallback to ipv4_address
         if [ -f "/tmp/app-deployment/state.yaml" ]; then
             DEPLOYMENT_IP=$(grep "^primary_ip:" /tmp/app-deployment/state.yaml 2>/dev/null | awk '{print $2}')
-            # Fallback to vm_ip if primary_ip not found
+            # Fallback to ipv4_address if primary_ip not found
             if [ -z "$DEPLOYMENT_IP" ]; then
-                DEPLOYMENT_IP=$(grep "^vm_ip:" /tmp/app-deployment/state.yaml 2>/dev/null | awk '{print $2}')
+                DEPLOYMENT_IP=$(grep "^ipv4_address:" /tmp/app-deployment/state.yaml 2>/dev/null | awk '{print $2}')
             fi
         fi
         if [ -z "$DEPLOYMENT_IP" ] && [ -f "/tmp/app-deployment/../state.yaml" ]; then
             DEPLOYMENT_IP=$(grep "^primary_ip:" /tmp/app-deployment/../state.yaml 2>/dev/null | awk '{print $2}')
-            # Fallback to vm_ip if primary_ip not found
+            # Fallback to ipv4_address if primary_ip not found
             if [ -z "$DEPLOYMENT_IP" ]; then
-                DEPLOYMENT_IP=$(grep "^vm_ip:" /tmp/app-deployment/../state.yaml 2>/dev/null | awk '{print $2}')
+                DEPLOYMENT_IP=$(grep "^ipv4_address:" /tmp/app-deployment/../state.yaml 2>/dev/null | awk '{print $2}')
             fi
         fi
     fi

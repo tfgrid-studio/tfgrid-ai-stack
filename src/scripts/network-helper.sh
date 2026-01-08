@@ -37,18 +37,18 @@ get_state_file_vm() {
 }
 
 # Get both VM and Mycelium IPs from state
-# Output format: "vm_ip|mycelium_ip"
+# Output format: "ipv4_address|mycelium_address"
 get_ips_vm() {
     local state_file
     state_file=$(get_state_file_vm)
-    local vm_ip="" mycelium_ip=""
+    local ipv4_address="" mycelium_address=""
 
     if [ -n "$state_file" ]; then
-        vm_ip=$(grep "^vm_ip:" "$state_file" 2>/dev/null | head -n1 | awk '{print $2}')
-        mycelium_ip=$(grep "^mycelium_ip:" "$state_file" 2>/dev/null | head -n1 | awk '{print $2}')
+        ipv4_address=$(grep "^ipv4_address:" "$state_file" 2>/dev/null | head -n1 | awk '{print $2}')
+        mycelium_address=$(grep "^mycelium_address:" "$state_file" 2>/dev/null | head -n1 | awk '{print $2}')
     fi
 
-    echo "$vm_ip|$mycelium_ip"
+    echo "$ipv4_address|$mycelium_address"
 }
 
 # Get the preferred deployment IP based on network preference
@@ -57,15 +57,15 @@ get_deployment_ip_vm() {
     local pref
     pref=$(get_network_preference_vm)
 
-    local ips vm_ip myc_ip
+    local ips ipv4_address myc_ip
     ips=$(get_ips_vm)
-    vm_ip=$(echo "$ips" | cut -d'|' -f1)
+    ipv4_address=$(echo "$ips" | cut -d'|' -f1)
     myc_ip=$(echo "$ips" | cut -d'|' -f2)
 
     if [ "$pref" = "mycelium" ] && [ -n "$myc_ip" ]; then
         echo "$myc_ip"
     else
-        echo "$vm_ip"
+        echo "$ipv4_address"
     fi
 }
 
